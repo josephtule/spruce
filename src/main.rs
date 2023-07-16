@@ -41,31 +41,48 @@ fn main() {
         propagate_flag: true,
         central_body: &earth,
     };
+    let mut sat2 = Body {
+        name: String::from("sat2"), // match struct name
+        mass: 100., //kg
+        position: [earth.equatorial_radius + 1000e3,0.,0.], // m
+        velocity: [0.,0.,7.350157059479294e+03], // m/s
+        propagate_flag: true,
+        central_body: &earth,
+    };
+
+
 
     println!("Initial Position: {:.4?}",sat1.position);
     println!("Initial Velocity: {:.4?}",sat1.velocity);
 
-
+    let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         mass: 6e24,
         equatorial_radius: 6789e3,
         mu: 3.987e14,
-        satellite: &mut sat1,
+        satellite: satellites,
         step_width: 0.01,
         time: 0.,
         central_body: &earth,
     };
-    let mut i = 1;
-    let mut file = File::create("output.txt").expect("Failed to create file");
+    // let mut file = File::create("output.txt").expect("Failed to create file");
+    let mut files: Vec<File> = Vec::new();
 
-    writeln!(file,"{}, {}, {}",sys_temp.satellite.position[0],sys_temp.satellite.position[1],sys_temp.satellite.position[2]).expect("Failed to write to file");
-    loop {
-        sys_temp.rk4();
-        writeln!(file,"{}, {}, {}",sys_temp.satellite.position[0],sys_temp.satellite.position[1],sys_temp.satellite.position[2]).expect("Failed to write to file");
-        // println!("The new position is {:.4?}",sys_temp.satellite.position);
-        i += 1;
-        if i > 1000000 {
-            break;
+    for sat_num in 0..sys_temp.satellite.len() {
+        let mut i = 1;
+
+        let filename = format!("output{}.txt",sat_num);
+        let file = File::create(&filename).expect("Failed to create file");
+        files.push(file);
+
+        loop {
+            sys_temp.rk4(sat_num);
+            writeln!(files[sat_num],"{}, {}, {}",sys_temp.satellite[sat_num].position[0],sys_temp.satellite[sat_num].position[1],sys_temp.satellite[sat_num].position[2]).expect("Failed to write to file");
+            // println!("The new position is {:.4?}",sys_temp.satellite.position);
+            i += 1;
+            if i > 1000 {
+                break;
+            }
         }
     }
 }
