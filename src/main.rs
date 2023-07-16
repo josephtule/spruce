@@ -62,7 +62,7 @@ fn main() {
         equatorial_radius: 6789e3,
         mu: 3.987e14,
         satellite: satellites,
-        step_width: 0.1,
+        step_width: 0.5,
         time: 0.,
         central_body: &earth,
     };
