@@ -1,13 +1,25 @@
+#[allow(unused_imports)]
+
 mod math;
 mod pointmass;
-use math::*;
-use pointmass::*;
+mod centralbody;
+// use math as ma; // use math with ma:: notation
+use math::*; // use math without math:: notation
+// use pointmass::*;
+// use centralbody::*;
+
 
 fn main() {
-    let re = 6_371.393e3;
-    let position_eci = vec![2.0 * re, 2.0 * re, 0.0];
-    let mu = 3.986e14;
-    let acceleration_eci = gravity(&position_eci, mu);
-    let acceleration_eci_mag = magnitude(&acceleration_eci);
-    println!("{:?}", acceleration_eci_mag)
+    let mut myvec = vec![1.;10];
+
+    for i in 1..myvec.len() {
+        myvec[i] = myvec[i] + myvec[i-1];
+    }
+
+    let myvec_mag = magnitude(&myvec);
+    let myvec_norm = normalize(&myvec);
+
+    println!("My vector is {:.4?}\n\
+        its magnitude is {myvec_mag:.4}\n\
+        and the normal vector is {:.4?}",myvec,myvec_norm);
 }
