@@ -2,7 +2,7 @@
 
 mod math;
 mod pointmass;
-mod centralbody;
+mod dynamical_system;
 // use math as ma; // use math with ma:: notation
 use math::*; // use math without math:: notation
 use pointmass::*;
@@ -25,12 +25,12 @@ fn main() {
     let sat1 = Body {
         name: String::from("sat1"), // match struct name
         mass: 100., //kg
-        position_init: [100e3,100e3,100e3], // m
-        velocity_init: [1.,1.,1.], // m/s
+        position: [100e3,100e3,100e3], // m
+        velocity: [1.,1.,1.], // m/s
         propagate_flag: true,
     };
 
-    println!("Initial Position: {:.4?}",sat1.position_init);
-    println!("Initial Velocity: {:.4?}",sat1.velocity_init);
+    println!("Initial Position: {:.4?}",sat1.position);
+    println!("Initial Velocity: {:.4?}",sat1.velocity);
 
 }

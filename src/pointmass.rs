@@ -3,10 +3,9 @@ use crate::math::*;
 pub struct Body {
     pub name: String,
     pub mass: f64,
-    pub position_init: [f64; 3],
-    pub velocity_init: [f64; 3],
+    pub position: [f64; 3],
+    pub velocity: [f64; 3],
     pub propagate_flag: bool,
-
 }
 #[allow(dead_code)]
 impl Body {
@@ -15,14 +14,14 @@ impl Body {
             name: String::from("satellite"), // match struct name
             // name: String::new(), // empty string
             mass: 100., //kg
-            position_init: [100e3,100e3,100e3], // m
-            velocity_init: [1.,1.,1.], // m/s
+            position: [100e3,100e3,100e3], // m
+            velocity: [1.,1.,1.], // m/s
             propagate_flag: true,
         }
     }
 
     #[allow(dead_code)]
-    pub fn dxdt(&self, state: [f64;6]) -> [f64;6] { //consider moving to system struct, set as body
+    pub fn dxdt(&self, state: &[f64;6], time: &f64) -> [f64;6] { //consider moving to system struct, set as body
         //eoms
         let mut state_dot: [f64;6] = [0.;6];
         let r = magnitude(&state[0..3]);
