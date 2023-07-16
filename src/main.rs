@@ -5,7 +5,7 @@ mod pointmass;
 mod centralbody;
 // use math as ma; // use math with ma:: notation
 use math::*; // use math without math:: notation
-// use pointmass::*;
+use pointmass::*;
 // use centralbody::*;
 
 
@@ -22,4 +22,15 @@ fn main() {
     println!("My vector is {:.4?}\n\
         its magnitude is {myvec_mag:.4}\n\
         and the normal vector is {:.4?}",myvec,myvec_norm);
+    let sat1 = Body {
+        name: String::from("sat1"), // match struct name
+        mass: 100., //kg
+        position_init: [100e3,100e3,100e3], // m
+        velocity_init: [1.,1.,1.], // m/s
+        propagate_flag: true,
+    };
+
+    println!("Initial Position: {:.4?}",sat1.position_init);
+    println!("Initial Velocity: {:.4?}",sat1.velocity_init);
+
 }

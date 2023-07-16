@@ -1,16 +1,16 @@
 use crate::math::*;
 
-struct Body {
-    name: String,
-    mass: f64,
-    position_init: [f64; 3],
-    velocity_init: [f64; 3],
-    propagate_flag: bool,
+pub struct Body {
+    pub name: String,
+    pub mass: f64,
+    pub position_init: [f64; 3],
+    pub velocity_init: [f64; 3],
+    pub propagate_flag: bool,
 
 }
-
+#[allow(dead_code)]
 impl Body {
-    fn new() -> Body {
+    pub fn new() -> Body {
         Body {
             name: String::from("satellite"), // match struct name
             // name: String::new(), // empty string
@@ -21,7 +21,8 @@ impl Body {
         }
     }
 
-    fn dxdt(&self, state: [f64;6]) -> [f64;6] { //consider moving to system struct, set as body
+    #[allow(dead_code)]
+    pub fn dxdt(&self, state: [f64;6]) -> [f64;6] { //consider moving to system struct, set as body
         //eoms
         let mut state_dot: [f64;6] = [0.;6];
         let r = magnitude(&state[0..3]);
