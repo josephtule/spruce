@@ -68,13 +68,17 @@ fn main() {
     // let mut file = File::create("output.txt").expect("Failed to create file");
     let mut files: Vec<File> = Vec::new();
 
+    // loop through all satellites
     for sat_num in 0..sys_temp.satellite.len() {
+        // propagate index
         let mut i = 1;
-
+        
+        // add file to files vector
         let filename = format!("output{}.txt",sat_num);
         let file = File::create(&filename).expect("Failed to create file");
         files.push(file);
 
+        // propagate for current satellite and write to file
         loop {
             sys_temp.rk4(sat_num);
             writeln!(files[sat_num],"{}, {}, {}",sys_temp.satellite[sat_num].position[0],sys_temp.satellite[sat_num].position[1],sys_temp.satellite[sat_num].position[2]).expect("Failed to write to file");
