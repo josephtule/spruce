@@ -58,9 +58,6 @@ fn main() {
     let n = 10000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
-        mass: 6e24,
-        equatorial_radius: 6789e3,
-        mu: 3.987e14,
         satellite: satellites,
         step_width: 0.5,
         time: 0.,

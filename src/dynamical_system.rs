@@ -2,9 +2,6 @@
 use crate::pointmass::*;
 
 pub struct DynamicalSystem<'a> {
-    pub mass: f64,
-    pub equatorial_radius: f64,
-    pub mu: f64,
     pub satellite: Vec<&'a mut Body<'a>>,
     pub step_width: f64,
     pub central_body: &'a CentralBody,    
