@@ -10,6 +10,7 @@ use std::ops::Mul;
 //     vector_mag.sqrt()
 // }
 
+#[allow(dead_code)]
 pub fn magnitude<T>(input: &[T]) -> f64
     where   
     T: Mul<Output = f64> + Copy,
@@ -22,6 +23,7 @@ pub fn magnitude<T>(input: &[T]) -> f64
     square_sum.sqrt()
 }
 
+#[allow(dead_code)]
 pub fn normalize(vector: &Vec<f64>) -> Vec<f64> {
     let mut normalized_vector = vec![0.0; vector.len()];
     let vector_mag = magnitude(&vector);

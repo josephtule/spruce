@@ -1,31 +1,32 @@
 #[allow(unused_imports)]
 use std::fs::File;
 use std::io::Write;
-// use std::time::Instant;
+use std::time::Instant;
 
 mod math;
 mod pointmass;
 mod dynamical_system;
 // use math as ma; // use math with ma:: notation
-use math::*; // use math without math:: notation
+// use math::*; // use math without math:: notation
 use pointmass::*;
 use dynamical_system::*;
 
 
 fn main() {
-    let mut myvec = vec![1.;10];
-
-    for i in 1..myvec.len() {
-        myvec[i] = myvec[i] + myvec[i-1];
-    }
-
-    let myvec_mag = magnitude(&myvec);
-    let myvec_norm = normalize(&myvec);
-
-    println!("My vector is {:.4?}\n\
-        its magnitude is {myvec_mag:.4}\n\
-        and the normal vector is {:.4?}",myvec,myvec_norm);
-    
+    let start_time = Instant::now();
+    // let mut myvec = vec![1.;10];
+    //
+    // for i in 1..myvec.len() {
+    //     myvec[i] = myvec[i] + myvec[i-1];
+    // }
+    //
+    // let myvec_mag = magnitude(&myvec);
+    // let myvec_norm = normalize(&myvec);
+    //
+    // println!("My vector is {:.4?}\n\
+    //     its magnitude is {myvec_mag:.4}\n\
+    //     and the normal vector is {:.4?}",myvec,myvec_norm);
+    // 
     let earth = CentralBody {
         name: String::from("Earth"),
         mass: 5.97219e24,
@@ -52,16 +53,16 @@ fn main() {
 
 
 
-    println!("Initial Position: {:.4?}",sat1.position);
-    println!("Initial Velocity: {:.4?}",sat1.velocity);
-
+    // println!("Initial Position: {:.4?}",sat1.position);
+    // println!("Initial Velocity: {:.4?}",sat1.velocity);
+    let n = 1000000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         mass: 6e24,
         equatorial_radius: 6789e3,
         mu: 3.987e14,
         satellite: satellites,
-        step_width: 5.,
+        step_width: 0.01,
         time: 0.,
         central_body: &earth,
     };
@@ -78,15 +79,21 @@ fn main() {
         let file = File::create(&filename).expect("Failed to create file");
         files.push(file);
 
+        //write first line
+        writeln!(files[sat_num],"{}, {}, {}",sys_temp.satellite[sat_num].position[0],sys_temp.satellite[sat_num].position[1],sys_temp.satellite[sat_num].position[2]).expect("Failed to write to file");
+
         // propagate for current satellite and write to file
         loop {
             sys_temp.rk4(sat_num);
             writeln!(files[sat_num],"{}, {}, {}",sys_temp.satellite[sat_num].position[0],sys_temp.satellite[sat_num].position[1],sys_temp.satellite[sat_num].position[2]).expect("Failed to write to file");
             // println!("The new position is {:.4?}",sys_temp.satellite.position);
             i += 1;
-            if i > 1000 {
+            if i > n {
                 break;
             }
         }
     }
+
+    let end_time = Instant::now() - start_time;
+    println!("Elapsed time: {:?}",end_time);
 }
