@@ -3,8 +3,7 @@ use crate::math::*;
 pub struct Body<'a> {
     pub name: String,
     pub mass: f64,
-    pub position: [f64; 3],
-    pub velocity: [f64; 3],
+    pub state: [f64; 6],
     pub propagate_flag: bool,
     pub central_body: &'a CentralBody,
 }
@@ -36,14 +35,15 @@ impl<'a> Body<'a> {
     // }
 
     #[allow(dead_code)]
-    pub fn dxdt(&self, state: &[f64;6], _time: &f64) -> [f64;6] { //consider moving to system struct, set as body
+    pub fn dxdt(&self, state: &[f64; 6], _time: &f64) -> [f64; 6] {
+        //consider moving to system struct, set as body
         //eoms
-        let mut state_dot: [f64;6] = [0.;6];
+        let mut state_dot: [f64; 6] = [0.; 6];
         let r = magnitude(&state[0..3]);
         state_dot[0..3].copy_from_slice(&state[3..6]);
-        state_dot[3] = - state[0] * self.central_body.mu / r.powi(3);
-        state_dot[4] = - state[1] * self.central_body.mu / r.powi(3);
-        state_dot[5] = - state[2] * self.central_body.mu / r.powi(3);
+        state_dot[3] = -state[0] * self.central_body.mu / r.powi(3);
+        state_dot[4] = -state[1] * self.central_body.mu / r.powi(3);
+        state_dot[5] = -state[2] * self.central_body.mu / r.powi(3);
 
         // set flags for perturbations
         // if self.sph_harmonics {
@@ -54,4 +54,4 @@ impl<'a> Body<'a> {
         // }
         state_dot
     }
-} 
+}
