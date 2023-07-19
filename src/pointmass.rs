@@ -54,4 +54,9 @@ impl<'a> Body<'a> {
         // }
         state_dot
     }
+
+    #[allow(dead_code)]
+    pub fn sphharmon_grav(&self, state: &[f64; 6], _time: &f64) -> [f64; 6] {
+        // code will generate the acceleration
+    }
 }
