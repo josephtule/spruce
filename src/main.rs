@@ -26,16 +26,17 @@ fn main() {
     //     its magnitude is {myvec_mag:.4}\n\
     //     and the normal vector is {:.4?}",myvec,myvec_norm);
     //
-    let earth = CentralBody {
+    let mut earth = CentralBody {
         name: String::from("Earth"),
         mass: 5.97219e24,
-        mu: 3.986004418e14,
-        equatorial_radius: 6.3781e6,
+        mu: 3.986004418000000e+14,
+        equatorial_radius: 6378137.,
         grav_flag: true,
-        max_deg: 2;
+        max_deg: 30,
         c: vec![vec![]],
         s: vec![vec![]],
     };
+    let _read_result = earth.read_sph_coefs("egm2008data.txt", earth.max_deg, earth.max_deg);
 
     let mut sat1 = Body {
         name: String::from("sat1"), // match struct name
@@ -68,11 +69,11 @@ fn main() {
 
     // println!("Initial Position: {:.4?}",sat1.position);
     // println!("Initial Velocity: {:.4?}",sat1.velocity);
-    let n = 1000000;
+    let n = 100000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         satellite: satellites,
-        step_width: 0.5,
+        step_width: 100.,
         time: 0.,
         central_body: &earth,
     };

@@ -1,5 +1,8 @@
 use crate::math::*;
 use core::f64::consts::PI;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
+
 pub struct Body<'a> {
     pub name: String,
     pub mass: f64,
@@ -29,10 +32,21 @@ impl<'a> Body<'a> {
         let mut state_dot: [f64; 6] = [0.; 6];
         let r = magnitude(&state[0..3]);
         state_dot[0..3].copy_from_slice(&state[3..6]);
-        state_dot[3] = -state[0] * self.central_body.mu / r.powi(3);
-        state_dot[4] = -state[1] * self.central_body.mu / r.powi(3);
-        state_dot[5] = -state[2] * self.central_body.mu / r.powi(3);
 
+        if self.central_body.grav_flag {
+            // spherical harmonics gravity
+            let x: &[f64; 3] = &state[0..3].try_into().unwrap();
+            let grav_sph = self.sphharmon_grav(&x);
+
+            state_dot[3] = grav_sph[0];
+            state_dot[4] = grav_sph[1];
+            state_dot[5] = grav_sph[2];
+        } else {
+            // standard newtonian gravity
+            state_dot[3] = -state[0] * self.central_body.mu / r.powi(3);
+            state_dot[4] = -state[1] * self.central_body.mu / r.powi(3);
+            state_dot[5] = -state[2] * self.central_body.mu / r.powi(3);
+        }
         // set flags for perturbations
         // if self.sph_harmonics {
         //     let sph_harmonics_accel = get_sph_harmonics_accel(&state[0..3]);
@@ -105,7 +119,7 @@ impl<'a> Body<'a> {
                             - self.central_body.c[n][m] * slam_vec[m]);
             }
 
-            dUdr_sum_n = dUdr_sum_n + dUdr_sum_m * r_ratio_n * nf;
+            dUdr_sum_n = dUdr_sum_n + dUdr_sum_m * r_ratio_n * (nf + 1.);
             dUdphi_sum_n = dUdphi_sum_n + dUdphi_sum_m * r_ratio_n;
             dUdlam_sum_n = dUdlam_sum_n + dUdlam_sum_m * r_ratio_n;
         }
@@ -185,5 +199,57 @@ impl CentralBody {
             println!("{:.6?}", scale_factor[i]);
         } */
         (P, scale_factor)
+    }
+
+    pub fn read_sph_coefs(
+        &mut self,
+        file_path: &str,
+        max_n: usize,
+        max_m: usize,
+    ) -> io::Result<()> {
+        let parse_egm_line =
+            |line: &str| -> Result<(usize, usize, f64, f64), std::num::ParseFloatError> {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+
+                let n = parts[0].parse::<usize>().unwrap();
+                let m = parts[1].parse::<usize>().unwrap();
+
+                // Convert D notation to E notation for parsing in Rust
+                let c_str = parts[2].replace("D", "E");
+                let s_str = parts[3].replace("D", "E");
+
+                let c = c_str.parse::<f64>()?;
+                let s = s_str.parse::<f64>()?;
+
+                Ok((n, m, c, s))
+            };
+
+        let file = File::open(file_path)?;
+        let reader = BufReader::new(file);
+
+        let mut current_n = 0;
+        self.c = vec![vec![0.; max_m + 1]; max_n + 1];
+        self.s = vec![vec![0.; max_m + 1]; max_n + 1];
+        for line in reader.lines() {
+            if let Ok(valid_line) = line {
+                let (n, m, c, s) = parse_egm_line(&valid_line).unwrap_or((0, 0, 0.0, 0.0));
+
+                if n != current_n && n <= max_n {
+                    current_n = n;
+                }
+
+                if n <= max_n && m <= max_m {
+                    self.c[n][m] = c;
+                    self.s[n][m] = s;
+                }
+
+                // Stop reading if we have met the max n and m
+                if n == max_n && m == max_m {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
