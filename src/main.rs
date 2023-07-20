@@ -31,6 +31,10 @@ fn main() {
         mass: 5.97219e24,
         mu: 3.986004418e14,
         equatorial_radius: 6.3781e6,
+        grav_flag: true,
+        max_deg: 2;
+        c: vec![vec![]],
+        s: vec![vec![]],
     };
 
     let mut sat1 = Body {
