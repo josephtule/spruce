@@ -36,4 +36,46 @@ impl<'a> DynamicalSystem<'a> {
         }
         self.time += self.step_width;
     }
+    // asked chatgpt to speed this up, does it is not faster lol
+    // pub fn rk4(&mut self, sat_num: usize) {
+    //     let halfstep = self.step_width / 2.;
+    //
+    //     let k1 = self.satellite[sat_num].dxdt(&self.satellite[sat_num].state, &self.time);
+    //
+    //     let k2_statearg: [f64; 6] = self.satellite[sat_num]
+    //         .state
+    //         .iter()
+    //         .zip(k1.iter())
+    //         .map(|(state_val, k1_val)| state_val + k1_val * halfstep)
+    //         .collect::<Vec<f64>>()
+    //         .try_into()
+    //         .unwrap();
+    //     let k2 = self.satellite[sat_num].dxdt(&k2_statearg, &(self.time + halfstep));
+    //
+    //     let k3_statearg: [f64; 6] = self.satellite[sat_num]
+    //         .state
+    //         .iter()
+    //         .zip(k2.iter())
+    //         .map(|(state_val, k2_val)| state_val + k2_val * halfstep)
+    //         .collect::<Vec<f64>>()
+    //         .try_into()
+    //         .unwrap();
+    //     let k3 = self.satellite[sat_num].dxdt(&k3_statearg, &(self.time + halfstep));
+    //
+    //     let k4_statearg: [f64; 6] = self.satellite[sat_num]
+    //         .state
+    //         .iter()
+    //         .zip(k3.iter())
+    //         .map(|(state_val, k3_val)| state_val + k3_val * self.step_width)
+    //         .collect::<Vec<f64>>()
+    //         .try_into()
+    //         .unwrap();
+    //     let k4 = self.satellite[sat_num].dxdt(&k4_statearg, &(self.time + self.step_width));
+    //
+    //     for i in 0..6 {
+    //         self.satellite[sat_num].state[i] +=
+    //             self.step_width / 6. * (k1[i] + 2. * k2[i] + 2. * k3[i] + k4[i]);
+    //     }
+    //     self.time += self.step_width;
+    // }
 }

@@ -12,7 +12,6 @@ use dynamical_system::*;
 use pointmass::*;
 
 fn main() {
-    let start_time = Instant::now();
     // let mut myvec = vec![1.;10];
     //
     // for i in 1..myvec.len() {
@@ -79,7 +78,8 @@ fn main() {
     };
     // let mut file = File::create("output.txt").expect("Failed to create file");
     let mut files: Vec<File> = Vec::new();
-
+    let writefile = true;
+    let start_time = Instant::now();
     // loop through all satellites
     for sat_num in 0..sys_temp.satellite.len() {
         // propagate index
@@ -91,18 +91,7 @@ fn main() {
         files.push(file);
 
         //write first line
-        writeln!(
-            files[sat_num],
-            "{}, {}, {}",
-            sys_temp.satellite[sat_num].state[0],
-            sys_temp.satellite[sat_num].state[1],
-            sys_temp.satellite[sat_num].state[2]
-        )
-        .expect("Failed to write to file");
-
-        // propagate for current satellite and write to file
-        loop {
-            sys_temp.rk4(sat_num);
+        if writefile {
             writeln!(
                 files[sat_num],
                 "{}, {}, {}",
@@ -112,6 +101,22 @@ fn main() {
             )
             .expect("Failed to write to file");
             // println!("The new position is {:.4?}",sys_temp.satellite.position);
+        }
+        // propagate for current satellite and write to file
+        loop {
+            sys_temp.rk4(sat_num);
+            if writefile {
+                writeln!(
+                    files[sat_num],
+                    "{}, {}, {}",
+                    sys_temp.satellite[sat_num].state[0],
+                    sys_temp.satellite[sat_num].state[1],
+                    sys_temp.satellite[sat_num].state[2]
+                )
+                .expect("Failed to write to file");
+                // println!("The new position is {:.4?}",sys_temp.satellite.position);
+            }
+
             i += 1;
             if i > n {
                 break;

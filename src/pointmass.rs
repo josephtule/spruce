@@ -2,6 +2,7 @@ use crate::math::*;
 use core::f64::consts::PI;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+// use std::time::Instant;
 
 pub struct Body<'a> {
     pub name: String,
@@ -36,8 +37,10 @@ impl<'a> Body<'a> {
         if self.central_body.grav_flag {
             // spherical harmonics gravity
             let x: &[f64; 3] = &state[0..3].try_into().unwrap();
+            // let start_time = Instant::now();
             let grav_sph = self.sphharmon_grav(&x);
-
+            // let end_time = Instant::now() - start_time;
+            // println!("ellapsed time {:?}", end_time);
             state_dot[3] = grav_sph[0];
             state_dot[4] = grav_sph[1];
             state_dot[5] = grav_sph[2];
@@ -123,9 +126,11 @@ impl<'a> Body<'a> {
             dUdphi_sum_n = dUdphi_sum_n + dUdphi_sum_m * r_ratio_n;
             dUdlam_sum_n = dUdlam_sum_n + dUdlam_sum_m * r_ratio_n;
         }
-        let dUdr = -self.central_body.mu / r.powi(2) * dUdr_sum_n;
-        let dUdphi = self.central_body.mu / r * dUdphi_sum_n;
-        let dUdlam = self.central_body.mu / r * dUdlam_sum_n;
+
+        let muor = self.central_body.mu / r;
+        let dUdr = -muor / r * dUdr_sum_n;
+        let dUdphi = muor * dUdphi_sum_n;
+        let dUdlam = muor * dUdlam_sum_n;
 
         [
             ((1. / r) * dUdr
