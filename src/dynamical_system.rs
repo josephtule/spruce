@@ -163,7 +163,7 @@ impl<'a> DynamicalSystem<'a> {
 
         if self.timeflag == true {
             let end_time = Instant::now() - start_time;
-            println!("Elapsed propagation time (.txt): {:?}", end_time);
+            println!("Elapsed propagation time: {:?}", end_time);
         }
     }
 
@@ -216,7 +216,7 @@ impl<'a> DynamicalSystem<'a> {
         }
 
         let end_time = Instant::now() - start_time;
-        println!("Elapsed writing time: {:?}", end_time);
+        println!("Elapsed writing time (.txt): {:?}", end_time);
         Ok(())
     }
 
