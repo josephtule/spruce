@@ -67,18 +67,19 @@ impl EulerAngles {
 impl Quaternions {
     pub fn quat2dcm(&self, attitude: &mut Attitude) {
         let c1 = vec![
-            1. - 2. * self.quaternion[1].powi(2) - 2. * self.quaternion[2].powi(2),
+            1. - 2. * self.quaternion[0].powi(2) - 2. * self.quaternion[2].powi(2),
             2. * (self.quaternion[0] * self.quaternion[1]
                 + self.quaternion[2] * self.quaternion[3]),
             2. * (self.quaternion[0] * self.quaternion[2]
                 - self.quaternion[1] * self.quaternion[3]),
+
         ];
         let c2 = vec![
             2. * (self.quaternion[0] * self.quaternion[1]
                 - self.quaternion[2] * self.quaternion[3]),
             1. - 2. * self.quaternion[0].powi(2) - 2. * self.quaternion[2].powi(2),
             2. * (self.quaternion[1] * self.quaternion[2]
-                - self.quaternion[0] * self.quaternion[3]),
+                + self.quaternion[0] * self.quaternion[3]),
         ];
 
         let c3 = vec![
