@@ -6,13 +6,13 @@ use std::ops::Mul;
 //     for &element in vector {
 //         vector_mag += element*element;
 //     }
-//     
+//
 //     vector_mag.sqrt()
 // }
 
 #[allow(dead_code)]
 pub fn magnitude<T>(input: &[T]) -> f64
-    where   
+where
     T: Mul<Output = f64> + Copy,
 {
     let square_sum = input
@@ -31,4 +31,23 @@ pub fn normalize(vector: &Vec<f64>) -> Vec<f64> {
         normalized_vector[i] = vector[i] / vector_mag;
     }
     normalized_vector
+}
+
+pub fn matmul(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let a_rows = a.len();
+    let a_cols = a[0].len();
+    // let b_rows = b.len();
+    let b_cols = b[0].len();
+
+    let mut result = vec![vec![0.0; b_cols]; a_rows];
+
+    for i in 0..a_rows {
+        for j in 0..b_cols {
+            for k in 0..a_cols {
+                result[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+
+    result
 }

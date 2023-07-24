@@ -1,13 +1,15 @@
+use std::f64::consts::*;
 #[allow(unused_imports)]
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
-
+mod attitude;
 mod dynamical_system;
 mod math;
 mod pointmass;
 // use math as ma; // use math with ma:: notation
 // use math::*; // use math without math:: notation
+use attitude::*;
 use dynamical_system::*;
 use pointmass::*;
 
@@ -68,7 +70,7 @@ fn main() {
 
     // println!("Initial Position: {:.4?}",sat1.position);
     // println!("Initial Velocity: {:.4?}",sat1.velocity);
-    let n = 100000;
+    let n = 1000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         satellite: satellites,
@@ -126,4 +128,26 @@ fn main() {
 
     let end_time = Instant::now() - start_time;
     println!("Elapsed time: {:?}", end_time);
+
+    let mut sat1_attitude = attitude::Attitude {
+        euler: Some(EulerAngles {
+            angle1: 30. * PI / 180.,
+            angle2: 15. * PI / 180.,
+            angle3: 20. * PI / 180.,
+            sequence: String::from("321"),
+            dcm: vec![vec![]],
+        }),
+        quat: None,
+    };
+
+    let mut externaldcm = vec![vec![]];
+
+    if let Some(euler) = &mut sat1_attitude.euler {
+        euler.dcm = euler.euler2dcm();
+        externaldcm = euler.dcm.clone();
+    };
+
+    for i in 0..externaldcm.len() {
+        println!("{:?}", externaldcm[i]);
+    }
 }
