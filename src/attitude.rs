@@ -9,16 +9,14 @@ pub struct Quaternions {}
 
 #[allow(dead_code)]
 pub struct EulerAngles {
-    pub angle1: f64,
-    pub angle2: f64,
-    pub angle3: f64,
-    pub sequence: String,
+    pub angle: Vec<f64>,
+    pub sequence: Vec<usize>,
     pub dcm: Vec<Vec<f64>>,
 }
 
 #[allow(dead_code)]
 impl EulerAngles {
-    pub fn euler2dcm(&self) -> Vec<Vec<f64>> {
+    pub fn euler2dcm(&mut self) {
         // sequence "ABC" are multiplied as C*B*A
         // This method applies the Body sequence euler angle rather than the space sequence
         // The body sequence takes sequential rotations on the body axix to get a
@@ -26,85 +24,39 @@ impl EulerAngles {
         // A space or inertial sequence takes sequential rotations on the inertial axis to get a
         //     [BN] dcm (from inertial to body)
 
-        // rotate about x axis
-        fn rot1(theta: f64) -> Vec<Vec<f64>> {
+        fn r1(t: f64) -> Vec<Vec<f64>> {
             vec![
-                vec![1., 0., 0.],
-                vec![0., theta.cos(), theta.sin()],
-                vec![0., -theta.sin(), theta.cos()],
-            ]
-        }
-        // rotate about y axis
-        fn rot2(theta: f64) -> Vec<Vec<f64>> {
-            vec![
-                vec![theta.cos(), 0., -theta.sin()],
-                vec![0., 1., 0.],
-                vec![theta.sin(), 0., theta.cos()],
-            ]
-        }
-        // rotate about z axis
-        fn rot3(theta: f64) -> Vec<Vec<f64>> {
-            vec![
-                vec![theta.cos(), theta.sin(), 0.],
-                vec![-theta.sin(), theta.cos(), 0.],
-                vec![0., 0., 1.],
+                vec![1.0, 0.0, 0.0],
+                vec![0.0, t.cos(), t.sin()],
+                vec![0.0, -t.sin(), t.cos()],
             ]
         }
 
-        // match with correct sequence:
-        match &self.sequence[..] {
-            // 6 asymmetric sets
-            "123" => matmul(
-                &rot3(self.angle3),
-                &matmul(&rot2(self.angle2), &rot1(self.angle1)),
-            ),
-            "132" => matmul(
-                &rot2(self.angle3),
-                &matmul(&rot3(self.angle2), &rot1(self.angle1)),
-            ),
-            "231" => matmul(
-                &rot1(self.angle3),
-                &matmul(&rot3(self.angle2), &rot2(self.angle1)),
-            ),
-            "213" => matmul(
-                &rot3(self.angle3),
-                &matmul(&rot1(self.angle2), &rot2(self.angle1)),
-            ),
-            "312" => matmul(
-                &rot2(self.angle3),
-                &matmul(&rot1(self.angle2), &rot3(self.angle1)),
-            ),
-            "321" => matmul(
-                &rot1(self.angle3),
-                &matmul(&rot2(self.angle2), &rot3(self.angle1)),
-            ),
-
-            // 6 symmetric sets
-            "121" => matmul(
-                &rot1(self.angle3),
-                &matmul(&rot2(self.angle2), &rot1(self.angle1)),
-            ),
-            "131" => matmul(
-                &rot1(self.angle3),
-                &matmul(&rot3(self.angle2), &rot2(self.angle1)),
-            ),
-            "232" => matmul(
-                &rot2(self.angle3),
-                &matmul(&rot3(self.angle2), &rot2(self.angle1)),
-            ),
-            "212" => matmul(
-                &rot2(self.angle3),
-                &matmul(&rot1(self.angle2), &rot2(self.angle1)),
-            ),
-            "313" => matmul(
-                &rot3(self.angle3),
-                &matmul(&rot1(self.angle2), &rot3(self.angle1)),
-            ),
-            "323" => matmul(
-                &rot3(self.angle3),
-                &matmul(&rot2(self.angle2), &rot3(self.angle1)),
-            ),
-            _ => panic!("Invalid Sequence"),
+        fn r2(t: f64) -> Vec<Vec<f64>> {
+            vec![
+                vec![t.cos(), 0.0, -t.sin()],
+                vec![0.0, 1.0, 0.0],
+                vec![t.sin(), 0.0, t.cos()],
+            ]
         }
+
+        fn r3(t: f64) -> Vec<Vec<f64>> {
+            vec![
+                vec![t.cos(), t.sin(), 0.0],
+                vec![-t.sin(), t.cos(), 0.0],
+                vec![0.0, 0.0, 1.0],
+            ]
+        }
+        let r_functions = [r1, r2, r3];
+        let mut rot = vec![
+            vec![1.0, 0.0, 0.0],
+            vec![0.0, 1.0, 0.0],
+            vec![0.0, 0.0, 1.0],
+        ]; // Identity matrix
+
+        for i in (0..3).rev() {
+            rot = matmul(&rot, &r_functions[self.sequence[i] - 1](self.angle[i]));
+        }
+        self.dcm = rot;
     }
 }

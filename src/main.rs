@@ -131,10 +131,8 @@ fn main() {
 
     let mut sat1_attitude = attitude::Attitude {
         euler: Some(EulerAngles {
-            angle1: 30. * PI / 180.,
-            angle2: 15. * PI / 180.,
-            angle3: 20. * PI / 180.,
-            sequence: String::from("321"),
+            angle: vec![30. * PI / 180., 15. * PI / 180., 20. * PI / 180.],
+            sequence: vec![3, 2, 1],
             dcm: vec![vec![]],
         }),
         quat: None,
@@ -143,7 +141,7 @@ fn main() {
     let mut externaldcm = vec![vec![]];
 
     if let Some(euler) = &mut sat1_attitude.euler {
-        euler.dcm = euler.euler2dcm();
+        euler.euler2dcm();
         externaldcm = euler.dcm.clone();
     };
 
