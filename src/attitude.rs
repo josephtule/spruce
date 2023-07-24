@@ -6,7 +6,9 @@ pub struct Attitude {
     pub dcm: Vec<Vec<f64>>,
 }
 
-pub struct Quaternions {}
+pub struct Quaternions {
+    pub quaternion: Vec<f64>,
+}
 
 #[allow(dead_code)]
 pub struct EulerAngles {
@@ -16,7 +18,7 @@ pub struct EulerAngles {
 
 #[allow(dead_code)]
 impl EulerAngles {
-    pub fn euler2dcm(&mut self) -> Vec<Vec<f64>> {
+    pub fn euler2dcm(&self, attitude: &mut Attitude) {
         // sequence "ABC" are multiplied as C*B*A
         // This method applies the Body sequence euler angle rather than the space sequence
         // The body sequence takes sequential rotations on the body axix to get a
@@ -57,6 +59,46 @@ impl EulerAngles {
         for i in (0..3).rev() {
             rot = matmul(&rot, &r_functions[self.sequence[i] - 1](self.angle[i]));
         }
-        rot
+        attitude.dcm = rot;
+    }
+}
+
+#[allow(dead_code)]
+impl Quaternions {
+    pub fn quat2dcm(&self, attitude: &mut Attitude) {
+        let c1 = vec![
+            1. - 2. * self.quaternion[1].powi(2) - 2. * self.quaternion[2].powi(2),
+            2. * (self.quaternion[0] * self.quaternion[1]
+                + self.quaternion[2] * self.quaternion[3]),
+            2. * (self.quaternion[0] * self.quaternion[2]
+                - self.quaternion[1] * self.quaternion[3]),
+        ];
+        let c2 = vec![
+            2. * (self.quaternion[0] * self.quaternion[1]
+                - self.quaternion[2] * self.quaternion[3]),
+            1. - 2. * self.quaternion[0].powi(2) - 2. * self.quaternion[2].powi(2),
+            2. * (self.quaternion[1] * self.quaternion[2]
+                - self.quaternion[0] * self.quaternion[3]),
+        ];
+
+        let c3 = vec![
+            2. * (self.quaternion[0] * self.quaternion[2]
+                + self.quaternion[1] * self.quaternion[3]),
+            2. * (self.quaternion[1] * self.quaternion[2]
+                - self.quaternion[0] * self.quaternion[3]),
+            1. - 2. * self.quaternion[0].powi(2) - 2. * self.quaternion[1].powi(2),
+        ];
+
+        attitude.dcm = vec![c1, c2, c3];
+    }
+}
+
+impl Attitude {
+    pub fn gen_dcm(&mut self) {
+        if let Some(ref euler) = self.euler.take() {
+            euler.euler2dcm(self)
+        } else if let Some(ref quat) = self.quat.take() {
+            quat.quat2dcm(self)
+        }
     }
 }

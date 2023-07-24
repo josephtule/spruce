@@ -132,15 +132,13 @@ fn main() {
     let mut sat1_attitude = attitude::Attitude {
         euler: Some(EulerAngles {
             angle: vec![30. * PI / 180., 15. * PI / 180., 20. * PI / 180.],
-            sequence: vec![1, 2, 3],
+            sequence: vec![3, 2, 1],
         }),
         quat: None,
         dcm: vec![vec![]],
     };
 
-    if let Some(euler) = &mut sat1_attitude.euler {
-        sat1_attitude.dcm = euler.euler2dcm();
-    };
+    sat1_attitude.gen_dcm();
 
     for i in 0..sat1_attitude.dcm.len() {
         println!("{:?}", sat1_attitude.dcm[i]);
