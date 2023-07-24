@@ -101,4 +101,7 @@ impl Attitude {
             quat.quat2dcm(self)
         }
     }
+
+    // TODO: add a method to update all attitude represenations if one is updated
+    // TODO: add a method to update a single representation
 }
