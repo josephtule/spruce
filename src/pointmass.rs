@@ -31,7 +31,7 @@ impl<'a> Body<'a> {
         //consider moving to system struct, set as body
         //eoms
         let mut state_dot: [f64; 6] = [0.; 6];
-        let r = magnitude(&state[0..3]);
+        
         state_dot[0..3].copy_from_slice(&state[3..6]);
 
         if self.central_body.grav_flag {
@@ -46,6 +46,7 @@ impl<'a> Body<'a> {
             state_dot[5] = grav_sph[2];
         } else {
             // standard newtonian gravity
+            let r = magnitude(&state[0..3]);
             state_dot[3] = -state[0] * self.central_body.mu / r.powi(3);
             state_dot[4] = -state[1] * self.central_body.mu / r.powi(3);
             state_dot[5] = -state[2] * self.central_body.mu / r.powi(3);
