@@ -59,3 +59,11 @@ pub fn cross_operator(vector: Vec<f64>) -> Vec<Vec<f64>> {
     vec![vector[2], 0., -vector[0]],
     vec![-vector[1], vector[0], 0.]]
 }
+
+pub fn colvec(vector: &Vec<f64>) -> Vec<Vec<f64>> {
+    let mut newvec = vec![vec![0.]; vector.len()];
+    for i in 0..vector.len() {
+        newvec[i][0] = vector[i];
+    }
+    newvec
+}
