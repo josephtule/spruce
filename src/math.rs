@@ -52,14 +52,15 @@ pub fn matmul(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
 
     result
 }
-
+#[allow(dead_code)]
 pub fn cross_operator(vector: Vec<f64>) -> Vec<Vec<f64>> {
     vec![
-    vec![0., -vector[2], vector[1]],
-    vec![vector[2], 0., -vector[0]],
-    vec![-vector[1], vector[0], 0.]]
+        vec![0., -vector[2], vector[1]],
+        vec![vector[2], 0., -vector[0]],
+        vec![-vector[1], vector[0], 0.],
+    ]
 }
-
+#[allow(dead_code)]
 pub fn colvec(vector: &Vec<f64>) -> Vec<Vec<f64>> {
     let mut newvec = vec![vec![0.]; vector.len()];
     for i in 0..vector.len() {

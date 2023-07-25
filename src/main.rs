@@ -32,8 +32,8 @@ fn main() {
         mass: 5.97219e24,
         mu: 3.986004418000000e+14,
         equatorial_radius: 6378137.,
-        grav_flag: true,
-        max_deg: 30,
+        grav_flag: false,
+        max_deg: 0,
         c: vec![vec![]],
         s: vec![vec![]],
     };
@@ -70,7 +70,7 @@ fn main() {
 
     // println!("Initial Position: {:.4?}",sat1.position);
     // println!("Initial Velocity: {:.4?}",sat1.velocity);
-    let n = 1000;
+    let n = 1000000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         satellite: satellites,
