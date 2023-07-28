@@ -70,7 +70,7 @@ fn main() {
 
     // println!("Initial Position: {:.4?}",sat1.position);
     // println!("Initial Velocity: {:.4?}",sat1.velocity);
-    let n = 1000000;
+    let n = 10000;
     let satellites = vec![&mut sat1, &mut sat2];
     let mut sys_temp = DynamicalSystem {
         satellite: satellites,
