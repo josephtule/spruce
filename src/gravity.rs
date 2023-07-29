@@ -269,16 +269,35 @@ impl GravityCalculation for JGrav {
             5.40681239107e-7,  // j6
         ];
 
-        let a_j2 = -3. / 2.
-            * j_vals[0]
-            * muor3
-            * (central_body.equatorial_radius / r).powi(2)
-            * vector![
-                (1. - 5. * (state[2] / r).powi(2)) * state[0],
-                (1. - 5. * (state[2] / r).powi(2)) * state[1],
-                (3. - 5. * (state[2] / r).powi(2)) * state[2]
-            ];
-        state_dot.fixed_rows_mut::<3>(3).add_assign(&a_j2);
+        if central_body.max_order == 2 {
+            // j2
+            let a_j2 = -3. / 2.
+                * j_vals[0]
+                * muor3
+                * (central_body.equatorial_radius / r).powi(2)
+                * vector![
+                    (1. - 5. * (state[2] / r).powi(2)) * state[0],
+                    (1. - 5. * (state[2] / r).powi(2)) * state[1],
+                    (3. - 5. * (state[2] / r).powi(2)) * state[2]
+                ];
+            state_dot.fixed_rows_mut::<3>(3).add_assign(&a_j2);
+        }
+        if central_body.max_order == 3 {
+            // j3
+            todo!()
+        }
+        if central_body.max_order == 4 {
+            // j4
+            todo!()
+        }
+        if central_body.max_order == 5 {
+            // j5
+            todo!()
+        }
+        if central_body.max_order == 6 {
+            // j6
+            todo!()
+        }
 
         // Compute gravitational effects from each body in other_body
         for body in other_body.iter() {
