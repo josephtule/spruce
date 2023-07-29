@@ -47,7 +47,15 @@ impl<'a> Gravity<'a> {
             ),
         }
     }
-
+    pub fn dxdt2(&self, state: &Vector6<f64>, time: &f64, other_body_id: usize) -> Vector6<f64> {
+        OtherGrav.calculate(
+            &self.central_body,
+            &self.other_body,
+            other_body_id,
+            &state,
+            &time,
+        )
+    }
     // constructor functions
     pub fn spherical(
         central_body: &'a CentralBody,
@@ -86,6 +94,19 @@ impl<'a> Gravity<'a> {
             model: GravityModel::SphHarmonic(SphHarmonicGrav),
         }
     }
+
+    pub fn othergrav(
+        central_body: &'a CentralBody,
+        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    ) -> Self {
+        Self {
+            central_body,
+            satellite,
+            other_body,
+            model: GravityModel::OtherModel(OtherGrav),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -117,7 +138,7 @@ impl GravityCalculation for OtherGrav {
         other_body: &Vec<&mut OtherBody<'a>>,
         other_body_id: usize, // set to 0 if satellite
         state: &Vector6<f64>,
-        time: &f64,
+        _time: &f64,
     ) -> Vector6<f64> {
         let mut state_dot = Vector6::zeros();
 
@@ -141,13 +162,13 @@ impl GravityCalculation for OtherGrav {
             let mut y = Vector3::zeros();
             y.fixed_rows_mut::<3usize>(0)
                 .copy_from(&body.pos_old.fixed_rows::<3usize>(0));
-            let delta_x = y - x; // Assuming `position` is a field in OtherBody
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
             let r_body = delta_x.norm();
             let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
 
             state_dot
                 .fixed_rows_mut::<3usize>(3)
-                .add_assign(&(delta_x * muor3_body));
+                .sub_assign(&(delta_x * muor3_body));
         }
 
         // Add contribution from the central body
@@ -192,14 +213,14 @@ impl GravityCalculation for SphericalGrav {
             }
             let mut y = Vector3::zeros();
             y.fixed_rows_mut::<3usize>(0)
-                .copy_from(&body.pos_old.fixed_rows::<3usize>(0));
-            let delta_x = y - x; // Assuming `position` is a field in OtherBody
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
             let r_body = delta_x.norm();
             let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
 
             state_dot
                 .fixed_rows_mut::<3usize>(3)
-                .add_assign(&(delta_x * muor3_body));
+                .sub_assign(&(delta_x * muor3_body));
         }
 
         // Add contribution from the central body

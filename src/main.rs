@@ -14,6 +14,7 @@ use centralbody::*;
 use dynamical_system::*;
 use gravity::*;
 use nalgebra::*;
+use otherbody::*;
 use satbody::*;
 
 fn main() {
@@ -41,19 +42,42 @@ fn main() {
             .read_sph_coefs(filename, earth.max_order, earth.max_deg)
             .expect("Could not read file");
     }
-
     let time_0 = 0.;
+    let moon_distance_from_earth = 384400e3; // meters
+    let moonv0 = (earth.mu / moon_distance_from_earth).sqrt();
+    let mut moon1 = OtherBody {
+        central_body: &earth,
+        mass: 7.34e22,
+        mu: 4.9048695e12,
+        id: 1,
+        pos_old: Vector3::zeros(),
+        propagate_flag: true,
+        state: vector![moon_distance_from_earth, 0., 0., 0., moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
+        state_history: vec![vec![]],
+        time_history: vec![],
+    };
     let v0 = 7.350157059479294e+03;
+    let moon_radius = 1.7371e6; // meters
+    let sat_altitude_above_moon = 100e3; // 100 km
+    let sat_distance_from_moon_center = moon_radius + sat_altitude_above_moon;
+    let v0_sat = (moon1.mu / sat_distance_from_moon_center).sqrt();
+
     let mut sat1 = SatBody {
-        name: String::from("sat1"), // match struct name
-        mass: 100.,                 //kg
-        state: vector![earth.equatorial_radius + 1000e3, 0., 0., 0., v0, 0.,], // m, m/s
+        name: String::from("sat1"),
+        mass: 100.,
+        state: vector![
+            moon_distance_from_earth + sat_distance_from_moon_center,
+            0.,
+            0.,
+            0.,
+            moonv0 + v0_sat,
+            0.,
+        ],
         propagate_flag: true,
         central_body: &earth,
         state_history: vec![],
         time_history: vec![time_0],
     };
-
     let mut sat2 = SatBody {
         name: String::from("sat2"), // match struct name
         mass: 100.,                 //kg
@@ -72,9 +96,9 @@ fn main() {
     };
 
     let mut satellite = vec![&mut sat1, &mut sat2];
-    let mut otherbodies = vec![];
+    let mut otherbodies = vec![&mut moon1];
     let tspan = 3600. * 24. * 2.;
-    let dt = 1.;
+    let dt = 50.;
 
     let mut gravity = if earth.max_order > 1 && earth.max_deg > 0 {
         Gravity::sphharmonic(&earth, &mut satellite, &mut otherbodies)

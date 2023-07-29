@@ -86,7 +86,7 @@ impl<'a> DynamicalSystem<'a> {
 
             if self.writeflag {
                 // init file for other bodies
-                let filename = format!("output_other{}.txt", other_num);
+                let filename = format!("other_output{}.txt", other_num);
                 let file = File::create(&filename).expect("Failed to create file for other body");
                 other_files.push(file);
 
@@ -120,7 +120,7 @@ impl<'a> DynamicalSystem<'a> {
                 let current_state = self.gravity.satellite[sat_num].state.clone();
 
                 let dxdt_fun = |state: &Vector6<f64>, time: &f64| -> Vector6<f64> {
-                    self.gravity.dxdt(state, time, 0)
+                    self.gravity.dxdt(state, time, 9999)
                 };
 
                 let state_new = self.rk4_step(&dxdt_fun, &current_state);
@@ -163,7 +163,8 @@ impl<'a> DynamicalSystem<'a> {
 
                 let current_state = self.gravity.other_body[other_num].state.clone();
                 let dxdt_fun = |state: &Vector6<f64>, time: &f64| -> Vector6<f64> {
-                    self.gravity.dxdt(state, time, other_num)
+                    self.gravity
+                        .dxdt2(state, time, self.gravity.other_body[other_num].id)
                 };
 
                 let state_new = self.rk4_step(&dxdt_fun, &current_state);
@@ -180,6 +181,17 @@ impl<'a> DynamicalSystem<'a> {
                     self.gravity.other_body[other_num]
                         .time_history
                         .push(time_new);
+                }
+                if self.writeflag {
+                    writeln!(
+                        other_files[other_num],
+                        "{}, {}, {}",
+                        &self.gravity.other_body[other_num].state[0],
+                        &self.gravity.other_body[other_num].state[1],
+                        &self.gravity.other_body[other_num].state[2]
+                    )
+                    .expect("Failed to write to file");
+                    // println!("The new position is {:.4?}",&self.gravity.satellite.position);
                 }
             }
         }
