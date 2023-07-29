@@ -1,81 +1,116 @@
 // use crate::math::*;
-use crate::pointmass::*;
-
+use crate::centralbody::*;
+use crate::satbody::*;
+use std::fs::File;
+use std::io::Write;
+use std::time::Instant;
+// use nalgebra::*;
 pub struct DynamicalSystem<'a> {
     pub satellite: Vec<&'a mut Body<'a>>,
     pub step_width: f64,
     pub central_body: &'a CentralBody,
     pub time: f64,
+    pub maxsteps: usize,
+    pub writeflag: bool,
+    pub timeflag: bool,
+    pub storeflag: bool,
 }
 
 impl<'a> DynamicalSystem<'a> {
+    pub fn propagate(&mut self) {
+        let mut files: Vec<File> = Vec::new();
+
+        let start_time = Instant::now();
+
+        for sat_num in 0..self.satellite.len() {
+            // propagate index
+            let mut i = 1;
+
+            // add file to files vector
+            let filename = format!("output{}.txt", sat_num);
+            let file = File::create(&filename).expect("Failed to create file");
+            files.push(file);
+
+            let init_pos = self.satellite[sat_num].state.data.0[0];
+
+            // store initial position
+            self.satellite[sat_num]
+                .state_history
+                .push(init_pos.to_vec());
+
+            //write first line
+            if self.writeflag {
+                writeln!(
+                    files[sat_num],
+                    "{}, {}, {}",
+                    &self.satellite[sat_num].state[0],
+                    &self.satellite[sat_num].state[1],
+                    &self.satellite[sat_num].state[2]
+                )
+                .expect("Failed to write to file");
+                // println!("The new position is {:.4?}",&self.satellite.position);
+            }
+            // propagate for current satellite and write to file
+            loop {
+                self.rk4(sat_num);
+                if self.writeflag {
+                    writeln!(
+                        files[sat_num],
+                        "{}, {}, {}",
+                        &self.satellite[sat_num].state[0],
+                        &self.satellite[sat_num].state[1],
+                        &self.satellite[sat_num].state[2]
+                    )
+                    .expect("Failed to write to file");
+                    // println!("The new position is {:.4?}",&self.satellite.position);
+                }
+
+                i += 1;
+                if i > self.maxsteps {
+                    break;
+                }
+            }
+        }
+        if self.timeflag == true {
+            let end_time = Instant::now() - start_time;
+            println!("Elapsed time: {:?}", end_time);
+        }
+    }
+
     pub fn rk4(&mut self, sat_num: usize) {
         let halfstep = self.step_width / 2.;
-        let k1 = self.satellite[sat_num].dxdt(&self.satellite[sat_num].state, &self.time);
-        let k2_timearg = self.time + halfstep;
-        let mut k2_statearg: [f64; 6] = [0.; 6];
-        for i in 0..k2_statearg.len() {
-            k2_statearg[i] = &self.satellite[sat_num].state[i] + k1[i] * halfstep;
+
+        let k1 = self.satellite[sat_num]
+            .gravity
+            .dxdt(&self.satellite[sat_num].state, &self.time);
+
+        let k2 = self.satellite[sat_num].gravity.dxdt(
+            &(self.satellite[sat_num].state + k1 * halfstep),
+            &(self.time + halfstep),
+        );
+
+        let k3 = self.satellite[sat_num].gravity.dxdt(
+            &(self.satellite[sat_num].state + k2 * halfstep),
+            &(self.time + halfstep),
+        );
+
+        let k4 = self.satellite[sat_num].gravity.dxdt(
+            &(self.satellite[sat_num].state + self.step_width * k3),
+            &(self.time + self.step_width),
+        );
+
+        let state_new =
+            self.satellite[sat_num].state + self.step_width / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
+        self.satellite[sat_num].state = state_new;
+        let time_new = self.time + self.step_width;
+        self.time = time_new;
+
+        // store state and time histories
+        if self.storeflag {
+            self.satellite[sat_num]
+                .state_history
+                .push(state_new.data.0[0].to_vec());
+            self.satellite[sat_num].time_history.push(time_new);
         }
-        let k2 = self.satellite[sat_num].dxdt(&k2_statearg, &k2_timearg);
-        let k3_timearg = self.time + halfstep;
-        let mut k3_statearg: [f64; 6] = [0.; 6];
-        for i in 0..k3_statearg.len() {
-            k3_statearg[i] = &self.satellite[sat_num].state[i] + k2[i] * halfstep;
-        }
-        let k3 = self.satellite[sat_num].dxdt(&k3_statearg, &k3_timearg);
-        let k4_timearg = self.time + self.step_width;
-        let mut k4_statearg: [f64; 6] = [0.; 6];
-        for i in 0..k4_statearg.len() {
-            k4_statearg[i] = &self.satellite[sat_num].state[i] + self.step_width * k3[i];
-        }
-        let k4 = self.satellite[sat_num].dxdt(&k4_statearg, &k4_timearg);
-        for i in 0..6 {
-            self.satellite[sat_num].state[i] +=
-                self.step_width / 6. * (k1[i] + 2. * k2[i] + 2. * k3[i] + k4[i]);
-        }
-        self.time += self.step_width;
     }
-    // asked chatgpt to speed this up, does it is not faster lol
-    // pub fn rk4(&mut self, sat_num: usize) {
-    //     let halfstep = self.step_width / 2.;
-    //
-    //     let k1 = self.satellite[sat_num].dxdt(&self.satellite[sat_num].state, &self.time);
-    //
-    //     let k2_statearg: [f64; 6] = self.satellite[sat_num]
-    //         .state
-    //         .iter()
-    //         .zip(k1.iter())
-    //         .map(|(state_val, k1_val)| state_val + k1_val * halfstep)
-    //         .collect::<Vec<f64>>()
-    //         .try_into()
-    //         .unwrap();
-    //     let k2 = self.satellite[sat_num].dxdt(&k2_statearg, &(self.time + halfstep));
-    //
-    //     let k3_statearg: [f64; 6] = self.satellite[sat_num]
-    //         .state
-    //         .iter()
-    //         .zip(k2.iter())
-    //         .map(|(state_val, k2_val)| state_val + k2_val * halfstep)
-    //         .collect::<Vec<f64>>()
-    //         .try_into()
-    //         .unwrap();
-    //     let k3 = self.satellite[sat_num].dxdt(&k3_statearg, &(self.time + halfstep));
-    //
-    //     let k4_statearg: [f64; 6] = self.satellite[sat_num]
-    //         .state
-    //         .iter()
-    //         .zip(k3.iter())
-    //         .map(|(state_val, k3_val)| state_val + k3_val * self.step_width)
-    //         .collect::<Vec<f64>>()
-    //         .try_into()
-    //         .unwrap();
-    //     let k4 = self.satellite[sat_num].dxdt(&k4_statearg, &(self.time + self.step_width));
-    //
-    //     for i in 0..6 {
-    //         self.satellite[sat_num].state[i] +=
-    //             self.step_width / 6. * (k1[i] + 2. * k2[i] + 2. * k3[i] + k4[i]);
-    //     }
-    //     self.time += self.step_width;
-    // }
 }

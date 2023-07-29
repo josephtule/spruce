@@ -1,3 +1,4 @@
+clear
 opts = delimitedTextImportOptions("NumVariables", 3);
 
 directory = pwd;  % Specify the directory path
@@ -20,13 +21,14 @@ opts.EmptyLineRule = "read";
 % Import the data and plot
 figure(1)
 hold on
-xlim([-10000e3,10000e3])
-ylim([-10000e3,10000e3])
-zlim([-10000e3,10000e3])
-xlabel("x"),ylabel("y"),zlabel("z")
-axis("equal")
 grid on
+
+
+xlabel("x"),ylabel("y"),zlabel("z")
+axis equal
+view(-37.5,30)
 leg = cell(1,num_sats);
+xout = []; yout = []; zout = [];
 for i = 0:num_sats-1
     fn = "output" + num2str(i);
     filename = fn + ".txt";
@@ -35,9 +37,28 @@ for i = 0:num_sats-1
     x.(satname) = output.(fn).x;
     y.(satname) = output.(fn).y;
     z.(satname) = output.(fn).z;
-
+    % xout = [xout x.(satname)];
+    % yout = [yout y.(satname)];
+    % zout = [zout z.(satname)];
     plot3(x.(satname),y.(satname),z.(satname))
+    xlim([-10000e3,10000e3])
+    ylim([-10000e3,10000e3])
+    zlim([-10000e3,10000e3])
     leg{i+1} = satname;
 end
+
+
+
+
+% for j = 1:length(x.(satname))
+% 
+%         plot3(xout(1:j,:),yout(1:j,:),zout(1:j,:))
+%         xlim([-10000e3,10000e3])
+%         ylim([-10000e3,10000e3])
+%         zlim([-10000e3,10000e3])
+% 
+%     drawnow
+% end
+legend(leg,'location','best')
 clear opts output
-legend(leg)
+

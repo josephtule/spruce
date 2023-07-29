@@ -34,6 +34,7 @@ pub fn normalize(vector: &Vec<f64>) -> Vec<f64> {
 }
 
 // TODO: adjust to allow vec<vec<>> AND vec<> input for the second value
+#[allow(dead_code)]
 pub fn matmul(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     let a_rows = a.len();
     let a_cols = a[0].len();
@@ -52,6 +53,7 @@ pub fn matmul(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
 
     result
 }
+
 #[allow(dead_code)]
 pub fn cross_operator(vector: Vec<f64>) -> Vec<Vec<f64>> {
     vec![

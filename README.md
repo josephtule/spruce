@@ -1,1 +1,1 @@
-# Rust R-Body Orbital Simulator
+# Rust Orbit Simulator
