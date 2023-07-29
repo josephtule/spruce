@@ -1,48 +1,110 @@
 use crate::centralbody::*;
-// use crate::pointmass::*;
+use crate::otherbody::*;
+use crate::satbody::*;
+
 use nalgebra::*;
 use std::ops::AddAssign;
-
-// pub struct Body<'a> {
-//     pub name: String,
-//     pub mass: f64,
-//     pub state: Vector6<f64>,
-//     pub propagate_flag: bool,
-//     pub central_body: &'a CentralBody,
-// }
+use std::ops::SubAssign;
 
 pub struct Gravity<'a> {
+    pub satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+    pub other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
     pub central_body: &'a CentralBody,
     pub model: GravityModel,
-    // satellite: &'a Body<'a>,
 }
 
 #[allow(dead_code)]
 impl<'a> Gravity<'a> {
-    pub fn dxdt(&self, state: &Vector6<f64>, time: &f64) -> Vector6<f64> {
+    pub fn dxdt(&self, state: &Vector6<f64>, time: &f64, other_body_id: usize) -> Vector6<f64> {
         match &self.model {
-            GravityModel::Spherical(model) => model.calculate(&self.central_body, &state, &time),
-            GravityModel::J(model) => model.calculate(&self.central_body, state, time),
-            GravityModel::SphHarmonic(model) => model.calculate(&self.central_body, &state, &time), // ... other models
+            GravityModel::Spherical(model) => model.calculate(
+                &self.central_body,
+                &self.other_body,
+                other_body_id,
+                &state,
+                &time,
+            ),
+            GravityModel::J(model) => model.calculate(
+                &self.central_body,
+                &self.other_body,
+                other_body_id,
+                state,
+                time,
+            ),
+            GravityModel::SphHarmonic(model) => model.calculate(
+                &self.central_body,
+                &self.other_body,
+                other_body_id,
+                &state,
+                &time,
+            ), // ... other models
+            GravityModel::OtherModel(model) => model.calculate(
+                &self.central_body,
+                &self.other_body,
+                other_body_id,
+                &state,
+                &time,
+            ),
         }
     }
-    pub fn spherical(central_body: &'a CentralBody) -> Self {
+    pub fn dxdt2(&self, state: &Vector6<f64>, time: &f64, other_body_id: usize) -> Vector6<f64> {
+        OtherGrav.calculate(
+            &self.central_body,
+            &self.other_body,
+            other_body_id,
+            &state,
+            &time,
+        )
+    }
+    // constructor functions
+    pub fn spherical(
+        central_body: &'a CentralBody,
+        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    ) -> Self {
         Self {
             central_body,
+            satellite,
+            other_body,
             model: GravityModel::Spherical(SphericalGrav),
         }
     }
-    pub fn j(central_body: &'a CentralBody) -> Self {
+    pub fn j(
+        central_body: &'a CentralBody,
+        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    ) -> Self {
         Self {
             central_body,
+            satellite,
+            other_body,
             model: GravityModel::J(JGrav),
         }
     }
 
-    pub fn sphharmonic(central_body: &'a CentralBody) -> Self {
+    pub fn sphharmonic(
+        central_body: &'a CentralBody,
+        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    ) -> Self {
         Self {
             central_body,
+            satellite,
+            other_body,
             model: GravityModel::SphHarmonic(SphHarmonicGrav),
+        }
+    }
+
+    pub fn othergrav(
+        central_body: &'a CentralBody,
+        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
+        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    ) -> Self {
+        Self {
+            central_body,
+            satellite,
+            other_body,
+            model: GravityModel::OtherModel(OtherGrav),
         }
     }
 }
@@ -53,28 +115,34 @@ pub enum GravityModel {
     Spherical(SphericalGrav),
     J(JGrav),
     SphHarmonic(SphHarmonicGrav),
+    OtherModel(OtherGrav),
 }
 
 pub trait GravityCalculation {
-    fn calculate(
+    fn calculate<'a>(
         &self,
         central_body: &CentralBody,
+        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body_id: usize,
         state: &Vector6<f64>,
         time: &f64,
     ) -> Vector6<f64>;
 }
+
 #[derive(PartialEq)]
-pub struct SphericalGrav;
-impl GravityCalculation for SphericalGrav {
-    fn calculate(
+pub struct OtherGrav;
+impl GravityCalculation for OtherGrav {
+    fn calculate<'a>(
         &self,
         central_body: &CentralBody,
+        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body_id: usize, // set to 0 if satellite
         state: &Vector6<f64>,
         _time: &f64,
     ) -> Vector6<f64> {
         let mut state_dot = Vector6::zeros();
 
-        // copy velocity into first three elements of dxdt
+        // Initialize the state_dot with the current state's velocity
         state_dot
             .fixed_rows_mut::<3usize>(0)
             .copy_from(&state.fixed_rows::<3usize>(3));
@@ -84,21 +152,95 @@ impl GravityCalculation for SphericalGrav {
             .copy_from(&state.fixed_rows::<3usize>(0));
 
         let r = x.norm();
-        let muor3 = central_body.mu / r.powi(3);
 
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0));
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
+
+        // Add contribution from the central body
+        let muor3_central = central_body.mu / r.powi(3);
         state_dot
             .fixed_rows_mut::<3usize>(3)
-            .copy_from(&(state * -muor3).fixed_rows::<3usize>(0));
+            .sub_assign(&(x * muor3_central));
 
         state_dot
     }
 }
+
+#[derive(PartialEq)]
+pub struct SphericalGrav;
+impl GravityCalculation for SphericalGrav {
+    fn calculate<'a>(
+        &self,
+        central_body: &CentralBody,
+        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body_id: usize,
+        state: &Vector6<f64>,
+        _time: &f64,
+    ) -> Vector6<f64> {
+        let mut state_dot = Vector6::zeros();
+
+        // Initialize the state_dot with the current state's velocity
+        state_dot
+            .fixed_rows_mut::<3usize>(0)
+            .copy_from(&state.fixed_rows::<3usize>(3));
+
+        let mut x = Vector3::zeros();
+        x.fixed_rows_mut::<3usize>(0)
+            .copy_from(&state.fixed_rows::<3usize>(0));
+
+        let r = x.norm();
+
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
+
+        // Add contribution from the central body
+        let muor3_central = central_body.mu / r.powi(3);
+        state_dot
+            .fixed_rows_mut::<3usize>(3)
+            .sub_assign(&(x * muor3_central));
+
+        state_dot
+    }
+}
+
 #[derive(PartialEq)]
 pub struct JGrav;
 impl GravityCalculation for JGrav {
-    fn calculate(
+    fn calculate<'a>(
         &self,
         central_body: &CentralBody,
+        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body_id: usize,
         state: &Vector6<f64>,
         _time: &f64,
     ) -> Vector6<f64> {
@@ -127,26 +269,67 @@ impl GravityCalculation for JGrav {
             5.40681239107e-7,  // j6
         ];
 
-        let a_j2 = -3. / 2.
-            * j_vals[0]
-            * muor3
-            * (central_body.equatorial_radius / r).powi(2)
-            * vector![
-                (1. - 5. * (state[2] / r).powi(2)) * state[0],
-                (1. - 5. * (state[2] / r).powi(2)) * state[1],
-                (3. - 5. * (state[2] / r).powi(2)) * state[2]
-            ];
-        state_dot.fixed_rows_mut::<3>(3).add_assign(&a_j2);
+        if central_body.max_order == 2 {
+            // j2
+            let a_j2 = -3. / 2.
+                * j_vals[0]
+                * muor3
+                * (central_body.equatorial_radius / r).powi(2)
+                * vector![
+                    (1. - 5. * (state[2] / r).powi(2)) * state[0],
+                    (1. - 5. * (state[2] / r).powi(2)) * state[1],
+                    (3. - 5. * (state[2] / r).powi(2)) * state[2]
+                ];
+            state_dot.fixed_rows_mut::<3>(3).add_assign(&a_j2);
+        }
+        if central_body.max_order == 3 {
+            // j3
+            todo!()
+        }
+        if central_body.max_order == 4 {
+            // j4
+            todo!()
+        }
+        if central_body.max_order == 5 {
+            // j5
+            todo!()
+        }
+        if central_body.max_order == 6 {
+            // j6
+            todo!()
+        }
+
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
+
         state_dot
     }
 }
+
 #[derive(PartialEq)]
 pub struct SphHarmonicGrav;
 #[allow(non_snake_case)]
 impl GravityCalculation for SphHarmonicGrav {
-    fn calculate(
+    fn calculate<'a>(
         &self,
         central_body: &CentralBody,
+        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body_id: usize,
         state: &Vector6<f64>,
         time: &f64,
     ) -> Vector6<f64> {
@@ -264,6 +447,23 @@ impl GravityCalculation for SphHarmonicGrav {
         // (page 7)
         // or explained here https://space.stackexchange.com/questions/51806/difference-between-rotated-frame-and-rotating-frame
         state_dot.fixed_rows_mut::<3>(3).copy_from(&grav_sph);
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
 
         state_dot
     }

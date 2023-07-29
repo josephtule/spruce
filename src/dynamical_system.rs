@@ -1,15 +1,18 @@
 // use crate::math::*;
 use crate::centralbody::*;
-use crate::satbody::*;
+use crate::gravity::*;
+// use crate::otherbody::*;
+// use crate::satbody::*;
+use nalgebra::*;
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
 // use nalgebra::*;
 pub struct DynamicalSystem<'a> {
-    pub satellite: Vec<&'a mut Body<'a>>,
-    pub step_width: f64,
     pub central_body: &'a CentralBody,
+    pub gravity: &'a mut Gravity<'a>,
     pub time: f64,
+    pub step_width: f64,
     pub maxsteps: usize,
     pub writeflag: bool,
     pub timeflag: bool,
@@ -17,100 +20,185 @@ pub struct DynamicalSystem<'a> {
 }
 
 impl<'a> DynamicalSystem<'a> {
+    #[allow(dead_code)]
+    pub fn rk4_step(
+        &self,
+        dxdt: &dyn Fn(&Vector6<f64>, &f64) -> Vector6<f64>,
+        state: &Vector6<f64>,
+    ) -> Vector6<f64> {
+        let halfstep = self.step_width / 2.;
+
+        let k1 = dxdt(&state, &self.time);
+
+        let k2 = dxdt(&(state + k1 * halfstep), &(self.time + halfstep));
+
+        let k3 = dxdt(&(state + k2 * halfstep), &(self.time + halfstep));
+
+        let k4 = dxdt(
+            &(state + self.step_width * k3),
+            &(self.time + self.step_width),
+        );
+
+        state + self.step_width / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
+    }
+
     pub fn propagate(&mut self) {
         let mut files: Vec<File> = Vec::new();
+        let mut other_files: Vec<File> = Vec::new();
 
         let start_time = Instant::now();
 
-        for sat_num in 0..self.satellite.len() {
-            // propagate index
-            let mut i = 1;
-
-            // add file to files vector
-            let filename = format!("output{}.txt", sat_num);
-            let file = File::create(&filename).expect("Failed to create file");
-            files.push(file);
-
-            let init_pos = self.satellite[sat_num].state.data.0[0];
-
-            // store initial position
-            self.satellite[sat_num]
-                .state_history
-                .push(init_pos.to_vec());
-
-            //write first line
+        // storing and/or writing initial states for satellites
+        for sat_num in 0..self.gravity.satellite.len() {
+            if self.storeflag {
+                // store first state
+                let init_state = self.gravity.satellite[sat_num].state.data.0[0];
+                self.gravity.satellite[sat_num]
+                    .state_history
+                    .push(init_state.to_vec());
+            }
             if self.writeflag {
+                // init file
+                let filename = format!("output{}.txt", sat_num);
+                let file = File::create(&filename).expect("Failed to create file");
+                files.push(file);
+
+                // write first position
                 writeln!(
                     files[sat_num],
                     "{}, {}, {}",
-                    &self.satellite[sat_num].state[0],
-                    &self.satellite[sat_num].state[1],
-                    &self.satellite[sat_num].state[2]
+                    &self.gravity.satellite[sat_num].state[0],
+                    &self.gravity.satellite[sat_num].state[1],
+                    &self.gravity.satellite[sat_num].state[2]
                 )
                 .expect("Failed to write to file");
-                // println!("The new position is {:.4?}",&self.satellite.position);
             }
-            // propagate for current satellite and write to file
-            loop {
-                self.rk4(sat_num);
+        }
+        // storing initial states for other bodies
+        for other_num in 0..self.gravity.other_body.len() {
+            if self.storeflag {
+                // store first state
+                let init_state = self.gravity.other_body[other_num].state.data.0[0];
+                self.gravity.other_body[other_num]
+                    .state_history
+                    .push(init_state.to_vec());
+            }
+
+            if self.writeflag {
+                // init file for other bodies
+                let filename = format!("other_output{}.txt", other_num);
+                let file = File::create(&filename).expect("Failed to create file for other body");
+                other_files.push(file);
+
+                // write first position
+                writeln!(
+                    other_files[other_num],
+                    "{}, {}, {}",
+                    &self.gravity.other_body[other_num].state[0],
+                    &self.gravity.other_body[other_num].state[1],
+                    &self.gravity.other_body[other_num].state[2]
+                )
+                .expect("Failed to write to other body's file");
+            }
+
+            let mut init_pos = Vector3::zeros();
+            init_pos.fixed_rows_mut::<3usize>(0).copy_from(
+                &self.gravity.other_body[other_num]
+                    .state
+                    .fixed_rows::<3usize>(0),
+            );
+            self.gravity.other_body[other_num]
+                .pos_old
+                .fixed_rows_mut::<3usize>(0)
+                .copy_from(&init_pos);
+        }
+
+        // propagation ----------------------------------------------------------------------
+        for _k in 0..self.maxsteps {
+            // integrate for each satellite
+            for sat_num in 0..self.gravity.satellite.len() {
+                let current_state = self.gravity.satellite[sat_num].state.clone();
+
+                let dxdt_fun = |state: &Vector6<f64>, time: &f64| -> Vector6<f64> {
+                    self.gravity.dxdt(state, time, 9999)
+                };
+
+                let state_new = self.rk4_step(&dxdt_fun, &current_state);
+
+                self.gravity.satellite[sat_num].state = state_new;
+                // store state and time histories
+                if self.storeflag {
+                    let state_new = self.gravity.satellite[sat_num].state;
+                    self.gravity.satellite[sat_num]
+                        .state_history
+                        .push(state_new.data.0[0].to_vec());
+                    let time_new = self.time + self.step_width;
+                    self.gravity.satellite[sat_num].time_history.push(time_new);
+                }
+
                 if self.writeflag {
                     writeln!(
                         files[sat_num],
                         "{}, {}, {}",
-                        &self.satellite[sat_num].state[0],
-                        &self.satellite[sat_num].state[1],
-                        &self.satellite[sat_num].state[2]
+                        &self.gravity.satellite[sat_num].state[0],
+                        &self.gravity.satellite[sat_num].state[1],
+                        &self.gravity.satellite[sat_num].state[2]
                     )
                     .expect("Failed to write to file");
-                    // println!("The new position is {:.4?}",&self.satellite.position);
+                    // println!("The new position is {:.4?}",&self.gravity.satellite.position);
                 }
+            }
+            for other_num in 0..self.gravity.other_body.len() {
+                // store old position before integration step
+                let mut old_pos = Vector3::zeros();
+                old_pos.fixed_rows_mut::<3usize>(0).copy_from(
+                    &self.gravity.other_body[other_num]
+                        .state
+                        .fixed_rows::<3usize>(0),
+                );
+                self.gravity.other_body[other_num]
+                    .pos_old
+                    .fixed_rows_mut::<3usize>(0)
+                    .copy_from(&old_pos);
 
-                i += 1;
-                if i > self.maxsteps {
-                    break;
+                let current_state = self.gravity.other_body[other_num].state.clone();
+                let dxdt_fun = |state: &Vector6<f64>, time: &f64| -> Vector6<f64> {
+                    self.gravity
+                        .dxdt2(state, time, self.gravity.other_body[other_num].id)
+                };
+
+                let state_new = self.rk4_step(&dxdt_fun, &current_state);
+
+                self.gravity.other_body[other_num].state = state_new;
+
+                // store state and time histories
+                if self.storeflag {
+                    let state_new = self.gravity.other_body[other_num].state;
+                    self.gravity.other_body[other_num]
+                        .state_history
+                        .push(state_new.data.0[0].to_vec());
+                    let time_new = self.time + self.step_width;
+                    self.gravity.other_body[other_num]
+                        .time_history
+                        .push(time_new);
+                }
+                if self.writeflag {
+                    writeln!(
+                        other_files[other_num],
+                        "{}, {}, {}",
+                        &self.gravity.other_body[other_num].state[0],
+                        &self.gravity.other_body[other_num].state[1],
+                        &self.gravity.other_body[other_num].state[2]
+                    )
+                    .expect("Failed to write to file");
+                    // println!("The new position is {:.4?}",&self.gravity.satellite.position);
                 }
             }
         }
+
         if self.timeflag == true {
             let end_time = Instant::now() - start_time;
             println!("Elapsed time: {:?}", end_time);
-        }
-    }
-
-    pub fn rk4(&mut self, sat_num: usize) {
-        let halfstep = self.step_width / 2.;
-
-        let k1 = self.satellite[sat_num]
-            .gravity
-            .dxdt(&self.satellite[sat_num].state, &self.time);
-
-        let k2 = self.satellite[sat_num].gravity.dxdt(
-            &(self.satellite[sat_num].state + k1 * halfstep),
-            &(self.time + halfstep),
-        );
-
-        let k3 = self.satellite[sat_num].gravity.dxdt(
-            &(self.satellite[sat_num].state + k2 * halfstep),
-            &(self.time + halfstep),
-        );
-
-        let k4 = self.satellite[sat_num].gravity.dxdt(
-            &(self.satellite[sat_num].state + self.step_width * k3),
-            &(self.time + self.step_width),
-        );
-
-        let state_new =
-            self.satellite[sat_num].state + self.step_width / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
-        self.satellite[sat_num].state = state_new;
-        let time_new = self.time + self.step_width;
-        self.time = time_new;
-
-        // store state and time histories
-        if self.storeflag {
-            self.satellite[sat_num]
-                .state_history
-                .push(state_new.data.0[0].to_vec());
-            self.satellite[sat_num].time_history.push(time_new);
         }
     }
 }
