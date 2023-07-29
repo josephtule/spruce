@@ -9,7 +9,7 @@ mod otherbody;
 mod satbody;
 // use math as ma; // use math with ma:: notation
 // use math::*; // use math without math:: notation
-use attitude::*;
+// use attitude::*;
 use centralbody::*;
 use dynamical_system::*;
 use gravity::*;
@@ -29,8 +29,7 @@ fn main() {
         s: vec![vec![]],
         eci2ecef: Matrix3::zeros(),
     };
-
-    let grav_model = if earth.max_order > 1 && earth.max_deg > 0 {
+    if earth.max_order > 1 && earth.max_deg > 0 {
         let filename = if earth.max_order > 361 {
             "egm2008_2159.txt"
         } else if earth.max_order > 121 {
@@ -41,19 +40,8 @@ fn main() {
         earth
             .read_sph_coefs(filename, earth.max_order, earth.max_deg)
             .expect("Could not read file");
-        Gravity::sphharmonic(&earth)
-    } else if earth.max_order > 1 && earth.max_deg == 0 {
-        Gravity::j(&earth)
-    } else {
-        Gravity::spherical(&earth)
-    };
+    }
 
-    // let grav_model = Gravity {
-    //     central_body: &earth,
-    //     model: GravityModel::SphHarmonic(gravity::SphHarmonicGrav),
-    // };
-
-    // let grav_model = Gravity::sphharmonic(&earth);
     let time_0 = 0.;
     let v0 = 7.350157059479294e+03;
     let mut sat1 = SatBody {
@@ -62,7 +50,6 @@ fn main() {
         state: vector![earth.equatorial_radius + 1000e3, 0., 0., 0., v0, 0.,], // m, m/s
         propagate_flag: true,
         central_body: &earth,
-        gravity: &grav_model,
         state_history: vec![],
         time_history: vec![time_0],
     };
@@ -80,15 +67,22 @@ fn main() {
         ], // m, m/s
         propagate_flag: true,
         central_body: &earth,
-        gravity: &grav_model,
         state_history: vec![],
         time_history: vec![time_0],
     };
 
-    let satellite = vec![&mut sat1, &mut sat2];
-    let other_body = vec![];
+    let mut satellite = vec![&mut sat1, &mut sat2];
+    let mut otherbodies = vec![];
     let tspan = 3600. * 24. * 2.;
     let dt = 1.;
+
+    let mut gravity = if earth.max_order > 1 && earth.max_deg > 0 {
+        Gravity::sphharmonic(&earth, &mut satellite, &mut otherbodies)
+    } else if earth.max_order > 1 && earth.max_deg == 0 {
+        Gravity::j(&earth, &mut satellite, &mut otherbodies)
+    } else {
+        Gravity::spherical(&earth, &mut satellite, &mut otherbodies)
+    };
 
     #[allow(unused_mut)]
     #[allow(unused_assignments)]
@@ -96,46 +90,16 @@ fn main() {
 
     let mut sys_temp = DynamicalSystem {
         maxsteps: n as usize,
-        satellite,
         step_width: dt,
         time: 0.,
+        gravity: &mut gravity,
         central_body: &earth,
-        other_body,
         writeflag: true,
         timeflag: true,
         storeflag: true,
     };
 
     sys_temp.propagate();
-
-    let mut sat1_attitude = attitude::Attitude {
-        euler: None, //
-        quat: Some(Quaternions::new(vector![
-            0.133026865470266,
-            0.168722160571667,
-            0.230813085987612,
-            0.948979454430948
-        ])),
-        dcm: Matrix3::zeros(),
-        main_rep: String::from("quat"),
-    };
-    sat1_attitude.gen_dcm();
-
-    let mut sat2_attitude = attitude::Attitude {
-        euler: Some(EulerAngles::new(
-            vector![30. * PI / 180., 15. * PI / 180., 20. * PI / 180.],
-            [3, 2, 1],
-        )),
-        quat: None,
-        dcm: Matrix3::zeros(),
-        main_rep: String::from("euler"),
-    };
-    sat2_attitude.gen_dcm();
-
-    // print_smatrix(&sat1_attitude.dcm);
-    // println!();
-    // print_smatrix(&sat2_attitude.dcm);
-    // sat2_attitude.update_others();
 
     // println!("{:?}", sys_temp.satellite[0].state_history);
 }
@@ -175,3 +139,34 @@ fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
     }
     println!("");
 }
+
+// // attitude printing, not needed for now
+//
+// let mut sat1_attitude = attitude::Attitude {
+//     euler: None, //
+//     quat: Some(Quaternions::new(vector![
+//         0.133026865470266,
+//         0.168722160571667,
+//         0.230813085987612,
+//         0.948979454430948
+//     ])),
+//     dcm: Matrix3::zeros(),
+//     main_rep: String::from("quat"),
+// };
+// sat1_attitude.gen_dcm();
+//
+// let mut sat2_attitude = attitude::Attitude {
+//     euler: Some(EulerAngles::new(
+//         vector![30. * PI / 180., 15. * PI / 180., 20. * PI / 180.],
+//         [3, 2, 1],
+//     )),
+//     quat: None,
+//     dcm: Matrix3::zeros(),
+//     main_rep: String::from("euler"),
+// };
+// sat2_attitude.gen_dcm();
+//
+// // print_smatrix(&sat1_attitude.dcm);
+// // println!();
+// // print_smatrix(&sat2_attitude.dcm);
+// // sat2_attitude.update_others();
