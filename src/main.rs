@@ -24,7 +24,7 @@ fn main() {
         mu: 3.986004418000000e+14,   // kg.m^3/s^2
         equatorial_radius: 6378137., // m
         omega: 7.292115e-5,          // rad/s
-        max_order: 0, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
+        max_order: 2, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
         max_deg: 0,   // order >= degree
         c: vec![vec![]],
         s: vec![vec![]],
@@ -55,6 +55,7 @@ fn main() {
         state: vector![moon_distance_from_earth, 0., 0., 0., moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
         state_history: vec![vec![]],
         time_history: vec![],
+        name: String::from("moon1"),
     };
     let v0 = 7.350157059479294e+03;
     let moon_radius = 1.7371e6; // meters
@@ -98,7 +99,7 @@ fn main() {
     let mut satellite = vec![&mut sat1, &mut sat2];
     let mut otherbodies = vec![&mut moon1];
     let tspan = 3600. * 24. * 2.;
-    let dt = 50.;
+    let dt = 1.;
 
     let mut gravity = if earth.max_order > 1 && earth.max_deg > 0 {
         Gravity::sphharmonic(&earth, &mut satellite, &mut otherbodies)

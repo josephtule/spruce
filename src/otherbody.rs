@@ -2,6 +2,7 @@ use crate::centralbody::*;
 use nalgebra::*;
 
 pub struct OtherBody<'a> {
+    pub name: String,
     pub id: usize,
     pub central_body: &'a CentralBody,
     pub mu: f64,

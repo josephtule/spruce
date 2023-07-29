@@ -59,7 +59,10 @@ impl<'a> DynamicalSystem<'a> {
             }
             if self.writeflag {
                 // init file
-                let filename = format!("output{}.txt", sat_num);
+                let filename = format!(
+                    "outputs/output_{}.txt",
+                    self.gravity.satellite[sat_num].name
+                );
                 let file = File::create(&filename).expect("Failed to create file");
                 files.push(file);
 
@@ -86,7 +89,10 @@ impl<'a> DynamicalSystem<'a> {
 
             if self.writeflag {
                 // init file for other bodies
-                let filename = format!("other_output{}.txt", other_num);
+                let filename = format!(
+                    "outputs/output_{}.txt",
+                    self.gravity.other_body[other_num].name
+                );
                 let file = File::create(&filename).expect("Failed to create file for other body");
                 other_files.push(file);
 
