@@ -5,6 +5,7 @@ mod centralbody;
 mod dynamical_system;
 mod gravity;
 mod math;
+mod otherbody;
 mod satbody;
 // use math as ma; // use math with ma:: notation
 // use math::*; // use math without math:: notation
@@ -55,7 +56,7 @@ fn main() {
     // let grav_model = Gravity::sphharmonic(&earth);
     let time_0 = 0.;
     let v0 = 7.350157059479294e+03;
-    let mut sat1 = Body {
+    let mut sat1 = SatBody {
         name: String::from("sat1"), // match struct name
         mass: 100.,                 //kg
         state: vector![earth.equatorial_radius + 1000e3, 0., 0., 0., v0, 0.,], // m, m/s
@@ -66,7 +67,7 @@ fn main() {
         time_history: vec![time_0],
     };
 
-    let mut sat2 = Body {
+    let mut sat2 = SatBody {
         name: String::from("sat2"), // match struct name
         mass: 100.,                 //kg
         state: vector![
@@ -84,8 +85,8 @@ fn main() {
         time_history: vec![time_0],
     };
 
-    let satellites = vec![&mut sat1, &mut sat2];
-
+    let satellite = vec![&mut sat1, &mut sat2];
+    let other_body = vec![];
     let tspan = 3600. * 24. * 2.;
     let dt = 1.;
 
@@ -95,10 +96,11 @@ fn main() {
 
     let mut sys_temp = DynamicalSystem {
         maxsteps: n as usize,
-        satellite: satellites,
+        satellite,
         step_width: dt,
         time: 0.,
         central_body: &earth,
+        other_body,
         writeflag: true,
         timeflag: true,
         storeflag: true,

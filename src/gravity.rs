@@ -1,20 +1,15 @@
 use crate::centralbody::*;
-// use crate::pointmass::*;
+use crate::satbody::*;
+
 use nalgebra::*;
 use std::ops::AddAssign;
 
-// pub struct Body<'a> {
-//     pub name: String,
-//     pub mass: f64,
-//     pub state: Vector6<f64>,
-//     pub propagate_flag: bool,
-//     pub central_body: &'a CentralBody,
-// }
-
 pub struct Gravity<'a> {
+    pub satellite: Vec<&'a SatBody<'a>>,
+    pub 
     pub central_body: &'a CentralBody,
     pub model: GravityModel,
-    // satellite: &'a Body<'a>,
+    
 }
 
 #[allow(dead_code)]

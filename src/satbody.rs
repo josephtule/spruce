@@ -5,7 +5,7 @@ use nalgebra::*;
 // use std::ops::AddAssign;
 // use std::time::Instant;
 
-pub struct Body<'a> {
+pub struct SatBody<'a> {
     pub name: String,
     pub mass: f64,
     pub state: Vector6<f64>,
@@ -17,4 +17,4 @@ pub struct Body<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> Body<'a> {}
+impl<'a> SatBody<'a> {}
