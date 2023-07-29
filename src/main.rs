@@ -24,7 +24,7 @@ fn main() {
         mu: 3.986004418000000e+14,   // kg.m^3/s^2
         equatorial_radius: 6378137., // m
         omega: 7.292115e-5,          // rad/s
-        max_order: 0,
+        max_order: 2,
         max_deg: 0, // order >= degree
         c: vec![vec![]],
         s: vec![vec![]],

@@ -41,12 +41,13 @@ for i = 0:num_sats-1
     % yout = [yout y.(satname)];
     % zout = [zout z.(satname)];
     plot3(x.(satname),y.(satname),z.(satname))
-    xlim([-10000e3,10000e3])
-    ylim([-10000e3,10000e3])
-    zlim([-10000e3,10000e3])
+
     leg{i+1} = satname;
 end
-
+lims = [-1 1] * 400000000;
+xlim(lims)
+ylim(lims)
+zlim(lims)
 
 
 

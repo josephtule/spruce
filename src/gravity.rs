@@ -279,6 +279,25 @@ impl GravityCalculation for JGrav {
                 (3. - 5. * (state[2] / r).powi(2)) * state[2]
             ];
         state_dot.fixed_rows_mut::<3>(3).add_assign(&a_j2);
+
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
+
         state_dot
     }
 }
@@ -409,6 +428,23 @@ impl GravityCalculation for SphHarmonicGrav {
         // (page 7)
         // or explained here https://space.stackexchange.com/questions/51806/difference-between-rotated-frame-and-rotating-frame
         state_dot.fixed_rows_mut::<3>(3).copy_from(&grav_sph);
+        // Compute gravitational effects from each body in other_body
+        for body in other_body.iter() {
+            if other_body_id == body.id {
+                // Skip if the body is the same as the one being evaluated
+                continue;
+            }
+            let mut y = Vector3::zeros();
+            y.fixed_rows_mut::<3usize>(0)
+                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let delta_x = x - y; // Assuming `position` is a field in OtherBody
+            let r_body = delta_x.norm();
+            let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
+
+            state_dot
+                .fixed_rows_mut::<3usize>(3)
+                .sub_assign(&(delta_x * muor3_body));
+        }
 
         state_dot
     }
