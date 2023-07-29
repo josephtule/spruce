@@ -28,7 +28,7 @@ for i = 1:num_sats
     fn = "output_sat" + num2str(i);
     filename = fullfile(directory, fn + ".txt");
     output.(fn) = readtable(filename, opts);
-    satname = "sat" + num2str(i-1);
+    satname = "sat" + num2str(i);
     x.(satname) = output.(fn).x;
     y.(satname) = output.(fn).y;
     z.(satname) = output.(fn).z;
@@ -66,7 +66,7 @@ axis square
 leg = cell(1,num_sats);
 
 for i = 1:num_sats
-    satname = "sat" + num2str(i-1);
+    satname = "sat" + num2str(i);
     plot3(x.(satname),y.(satname),z.(satname))
     leg{i} = satname;
 end

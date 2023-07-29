@@ -57,6 +57,20 @@ fn main() {
         time_history: vec![],
         name: String::from("moon1"),
     };
+
+    let mut moon2 = OtherBody {
+        central_body: &earth,
+        mass: 7.34e22,
+        mu: 4.9048695e12,
+        id: 2,
+        pos_old: Vector3::zeros(),
+        propagate_flag: true,
+        state: vector![-moon_distance_from_earth, 0., 0., 0., -moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
+        state_history: vec![vec![]],
+        time_history: vec![],
+        name: String::from("moon2"),
+    };
+
     let v0 = 7.350157059479294e+03;
     let moon_radius = 1.7371e6; // meters
     let sat_altitude_above_moon = 100e3; // 100 km
@@ -96,10 +110,27 @@ fn main() {
         time_history: vec![time_0],
     };
 
-    let mut satellite = vec![&mut sat1, &mut sat2];
-    let mut otherbodies = vec![&mut moon1];
+    let mut sat3 = SatBody {
+        name: String::from("sat3"),
+        mass: 100.,
+        state: vector![
+            -(moon_distance_from_earth + sat_distance_from_moon_center),
+            0.,
+            0.,
+            0.,
+            -(moonv0 + v0_sat),
+            0.,
+        ],
+        propagate_flag: true,
+        central_body: &earth,
+        state_history: vec![],
+        time_history: vec![time_0],
+    };
+
+    let mut satellite = vec![&mut sat1, &mut sat2, &mut sat3];
+    let mut otherbodies = vec![&mut moon1, &mut moon2];
     let tspan = 3600. * 24. * 2.;
-    let dt = 1.;
+    let dt = 5.;
 
     let mut gravity = if earth.max_order > 1 && earth.max_deg > 0 {
         Gravity::sphharmonic(&earth, &mut satellite, &mut otherbodies)
