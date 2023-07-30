@@ -108,7 +108,7 @@ impl<'a> DynamicalSystem<'a> {
             if self.writeflag {
                 // init file for other bodies
                 let filename = format!(
-                    "outputs/output_{}.txt",
+                    "outputs/output_other_{}.txt",
                     self.eoms.other_body[other_num].name
                 );
                 let file = File::create(&filename).expect("Failed to create file for other body");
