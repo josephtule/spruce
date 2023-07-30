@@ -3,9 +3,12 @@ use crate::centralbody::*;
 use crate::eoms::*;
 // use crate::otherbody::*;
 // use crate::satbody::*;
+// use matfile::{MatFile, NumericData};
 use nalgebra::*;
+// use ndarray::Array2;
+use std::error::Error;
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::time::Instant;
 // use nalgebra::*;
 pub struct DynamicalSystem<'a> {
@@ -64,9 +67,6 @@ impl<'a> DynamicalSystem<'a> {
     }
 
     pub fn propagate(&mut self) {
-        let mut files: Vec<File> = Vec::new();
-        let mut other_files: Vec<File> = Vec::new();
-
         let start_time = Instant::now();
 
         // storing and/or writing initial states for satellites
@@ -78,22 +78,6 @@ impl<'a> DynamicalSystem<'a> {
                     .state_history
                     .push(init_state.to_vec());
             }
-            if self.writeflag {
-                // init file
-                let filename = format!("outputs/output_{}.txt", self.eoms.satellite[sat_num].name);
-                let file = File::create(&filename).expect("Failed to create file");
-                files.push(file);
-
-                // write first position
-                writeln!(
-                    files[sat_num],
-                    "{}, {}, {}",
-                    &self.eoms.satellite[sat_num].state[0],
-                    &self.eoms.satellite[sat_num].state[1],
-                    &self.eoms.satellite[sat_num].state[2]
-                )
-                .expect("Failed to write to file");
-            }
         }
         // storing initial states for other bodies
         for other_num in 0..self.eoms.other_body.len() {
@@ -103,26 +87,6 @@ impl<'a> DynamicalSystem<'a> {
                 self.eoms.other_body[other_num]
                     .state_history
                     .push(init_state.to_vec());
-            }
-
-            if self.writeflag {
-                // init file for other bodies
-                let filename = format!(
-                    "outputs/output_other_{}.txt",
-                    self.eoms.other_body[other_num].name
-                );
-                let file = File::create(&filename).expect("Failed to create file for other body");
-                other_files.push(file);
-
-                // write first position
-                writeln!(
-                    other_files[other_num],
-                    "{}, {}, {}",
-                    &self.eoms.other_body[other_num].state[0],
-                    &self.eoms.other_body[other_num].state[1],
-                    &self.eoms.other_body[other_num].state[2]
-                )
-                .expect("Failed to write to other body's file");
             }
 
             let mut init_pos = Vector3::zeros();
@@ -159,18 +123,6 @@ impl<'a> DynamicalSystem<'a> {
                     let time_new = self.time + self.step_width;
                     self.eoms.satellite[sat_num].time_history.push(time_new);
                 }
-
-                if self.writeflag {
-                    writeln!(
-                        files[sat_num],
-                        "{}, {}, {}",
-                        &self.eoms.satellite[sat_num].state[0],
-                        &self.eoms.satellite[sat_num].state[1],
-                        &self.eoms.satellite[sat_num].state[2]
-                    )
-                    .expect("Failed to write to file");
-                    // println!("The new position is {:.4?}",&self.eoms.satellite.position);
-                }
             }
             for other_num in 0..self.eoms.other_body.len() {
                 // store old position before integration step
@@ -204,23 +156,113 @@ impl<'a> DynamicalSystem<'a> {
                     let time_new = self.time + self.step_width;
                     self.eoms.other_body[other_num].time_history.push(time_new);
                 }
-                if self.writeflag {
-                    writeln!(
-                        other_files[other_num],
-                        "{}, {}, {}",
-                        &self.eoms.other_body[other_num].state[0],
-                        &self.eoms.other_body[other_num].state[1],
-                        &self.eoms.other_body[other_num].state[2]
-                    )
-                    .expect("Failed to write to file");
-                    // println!("The new position is {:.4?}",&self.eoms.satellite.position);
-                }
             }
         }
 
         if self.timeflag == true {
             let end_time = Instant::now() - start_time;
-            println!("Elapsed time: {:?}", end_time);
+            println!("Elapsed propagation time: {:?}", end_time);
         }
     }
+
+    pub fn writefiles(&self) -> Result<(), Box<dyn Error>> {
+        let mut files: Vec<BufWriter<File>> = Vec::new();
+        let mut other_files: Vec<BufWriter<File>> = Vec::new();
+
+        let start_time = Instant::now();
+
+        // Creating files
+        for satellite in self.eoms.satellite.iter() {
+            let filename = format!("outputs/output_{}.txt", satellite.name);
+            let file = BufWriter::new(File::create(&filename)?);
+            files.push(file);
+        }
+
+        for body in self.eoms.other_body.iter() {
+            let filename = format!("outputs/output_other_{}.txt", body.name);
+            let file = BufWriter::new(File::create(&filename)?);
+            other_files.push(file);
+        }
+
+        // Writing to files
+        for k in 0..self.maxsteps {
+            for (sat_num, satellite) in self.eoms.satellite.iter().enumerate() {
+                writeln!(
+                    files[sat_num],
+                    "{:?}, {:?}, {:?}",
+                    satellite.state_history[k][0],
+                    satellite.state_history[k][1],
+                    satellite.state_history[k][2]
+                )?;
+            }
+
+            for (other_num, body) in self.eoms.other_body.iter().enumerate() {
+                writeln!(
+                    other_files[other_num],
+                    "{}, {}, {}",
+                    body.state_history[k][0], body.state_history[k][1], body.state_history[k][2]
+                )?;
+            }
+        }
+
+        for writer in &mut files {
+            writer.flush()?;
+        }
+
+        for writer in &mut other_files {
+            writer.flush()?;
+        }
+
+        let end_time = Instant::now() - start_time;
+        println!("Elapsed writing time: {:?}", end_time);
+        Ok(())
+    }
+
+    // pub fn writemat(&self) -> Result<(), Box<dyn Error>> {
+    //     let start_time = Instant::now();
+    //
+    //     // Create a new MAT file for satellites
+    //     let mut sat_file = MatFile::new("outputs/satellites.mat")?;
+    //
+    //     for satellite in &self.eoms.satellite {
+    //         // Convert satellite state history to 2D ndarray (assuming state_history is Vec<Vec<f64>>)
+    //         let matrix: Array2<f64> = Array2::from_shape_vec(
+    //             (self.maxsteps, 3),
+    //             satellite
+    //                 .state_history
+    //                 .clone()
+    //                 .into_iter()
+    //                 .flatten()
+    //                 .collect(),
+    //         )?;
+    //
+    //         let data = NumericData::Double {
+    //             real: matrix.into_raw_vec(),
+    //             imag: None,
+    //         };
+    //
+    //         sat_file.write_numeric(&satellite.name, data)?;
+    //     }
+    //
+    //     // Create a new MAT file for other bodies
+    //     let mut body_file = MatFile::new("outputs/other_bodies.mat")?;
+    //
+    //     for body in &self.eoms.other_body {
+    //         let matrix: Array2<f64> = Array2::from_shape_vec(
+    //             (self.maxsteps, 3),
+    //             body.state_history.clone().into_iter().flatten().collect(),
+    //         )?;
+    //
+    //         let data = NumericData::Double {
+    //             real: matrix.into_raw_vec(),
+    //             imag: None,
+    //         };
+    //
+    //         body_file.write_numeric(&body.name, data)?;
+    //     }
+    //
+    //     let end_time = Instant::now() - start_time;
+    //     println!("Elapsed writing time: {:?}", end_time);
+    //     Ok(())
+    // }
 }

@@ -1,5 +1,6 @@
+use nalgebra::*;
+use std::fmt::Display;
 use std::ops::Mul;
-
 // pub fn magnitude(vector: &Vec<f64>) -> f64 {
 //     let mut vector_mag: f64 = 0.;
 //
@@ -69,4 +70,39 @@ pub fn colvec(vector: &Vec<f64>) -> Vec<Vec<f64>> {
         newvec[i][0] = vector[i];
     }
     newvec
+}
+
+#[allow(dead_code)]
+fn print_smatrix<T: Display, const R: usize, const C: usize>(mat: &SMatrix<T, R, C>) {
+    print!("[");
+    for i in 0..R {
+        for j in 0..C {
+            print!("{}, ", mat[(i, j)]);
+        }
+        if i == R - 1usize {
+            print!("]");
+        } else {
+            println!();
+        }
+    }
+    println!("");
+}
+
+#[allow(dead_code)]
+fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
+    let nrows = mat.nrows();
+    let ncols = mat.ncols();
+
+    print!("[");
+    for i in 0..nrows {
+        for j in 0..ncols {
+            print!("{:16.4}, ", mat[(i, j)]);
+        }
+        if i == nrows - 1 {
+            print!("]");
+        } else {
+            println!();
+        }
+    }
+    println!("");
 }

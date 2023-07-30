@@ -16,15 +16,17 @@ use eoms::*;
 use nalgebra::*;
 use otherbody::*;
 use satbody::*;
+use std::time::Instant;
 
 fn main() {
+    let timestart = Instant::now();
     let mut earth = CentralBody {
         name: String::from("Earth"),
         mass: 5.97219e24,            // kg
         mu: 3.986004418000000e+14,   // kg.m^3/s^2
         equatorial_radius: 6378137., // m
         omega: 7.292115e-5,          // rad/s
-        max_order: 2, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
+        max_order: 0, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
         max_deg: 0,   // order >= degree
         c: vec![vec![]],
         s: vec![vec![]],
@@ -53,7 +55,7 @@ fn main() {
         pos_old: Vector3::zeros(),
         propagate_flag: true,
         state: vector![moon_distance_from_earth, 0., 0., 0., moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
-        state_history: vec![vec![]],
+        state_history: vec![],
         time_history: vec![],
         name: String::from("moon1"),
     };
@@ -66,7 +68,7 @@ fn main() {
         pos_old: Vector3::zeros(),
         propagate_flag: true,
         state: vector![-moon_distance_from_earth, 0., 0., 0., -moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
-        state_history: vec![vec![]],
+        state_history: vec![],
         time_history: vec![],
         name: String::from("moon2"),
     };
@@ -143,7 +145,7 @@ fn main() {
     #[allow(unused_mut)]
     #[allow(unused_assignments)]
     let mut n = (tspan / dt) as usize;
-
+    n = 1e6 as usize;
     let mut sys_temp = DynamicalSystem {
         maxsteps: n as usize,
         step_width: dt,
@@ -154,46 +156,18 @@ fn main() {
         timeflag: true,
         storeflag: true,
     };
+    let endtime = Instant::now() - timestart;
 
+    println!("Elapsed set-up time: {:?}", endtime);
+    // sys_temp.propagate();
     sys_temp.propagate();
-
+    if sys_temp.writeflag && sys_temp.storeflag {
+        match sys_temp.writefiles() {
+            Ok(_) => println!("Writing succesful"),
+            Err(e) => println!("Error during writing: {}", e),
+        }
+    }
     // println!("{:?}", sys_temp.satellite[0].state_history);
-}
-
-use std::fmt::Display;
-#[allow(dead_code)]
-fn print_smatrix<T: Display, const R: usize, const C: usize>(mat: &SMatrix<T, R, C>) {
-    print!("[");
-    for i in 0..R {
-        for j in 0..C {
-            print!("{}, ", mat[(i, j)]);
-        }
-        if i == R - 1usize {
-            print!("]");
-        } else {
-            println!();
-        }
-    }
-    println!("");
-}
-
-#[allow(dead_code)]
-fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
-    let nrows = mat.nrows();
-    let ncols = mat.ncols();
-
-    print!("[");
-    for i in 0..nrows {
-        for j in 0..ncols {
-            print!("{:16.4}, ", mat[(i, j)]);
-        }
-        if i == nrows - 1 {
-            print!("]");
-        } else {
-            println!();
-        }
-    }
-    println!("");
 }
 
 // // attitude printing, not needed for now
