@@ -3,7 +3,7 @@ use std::f64::consts::*;
 mod attitude;
 mod centralbody;
 mod dynamical_system;
-mod gravity;
+mod eoms;
 mod math;
 mod otherbody;
 mod satbody;
@@ -12,7 +12,7 @@ mod satbody;
 // use attitude::*;
 use centralbody::*;
 use dynamical_system::*;
-use gravity::*;
+use eoms::*;
 use nalgebra::*;
 use otherbody::*;
 use satbody::*;
@@ -133,11 +133,11 @@ fn main() {
     let dt = 5.;
 
     let mut gravity = if earth.max_order > 1 && earth.max_deg > 0 {
-        Gravity::sphharmonic(&earth, &mut satellite, &mut otherbodies)
+        Eoms::sphharmonic(&earth, &mut satellite, &mut otherbodies)
     } else if earth.max_order > 1 && earth.max_deg == 0 {
-        Gravity::j(&earth, &mut satellite, &mut otherbodies)
+        Eoms::j(&earth, &mut satellite, &mut otherbodies)
     } else {
-        Gravity::spherical(&earth, &mut satellite, &mut otherbodies)
+        Eoms::spherical(&earth, &mut satellite, &mut otherbodies)
     };
 
     #[allow(unused_mut)]
@@ -148,7 +148,7 @@ fn main() {
         maxsteps: n as usize,
         step_width: dt,
         time: 0.,
-        gravity: &mut gravity,
+        eoms: &mut gravity,
         central_body: &earth,
         writeflag: true,
         timeflag: true,

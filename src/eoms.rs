@@ -6,7 +6,7 @@ use nalgebra::*;
 use std::ops::AddAssign;
 use std::ops::SubAssign;
 
-pub struct Gravity<'a> {
+pub struct Eoms<'a> {
     pub satellite: &'a mut Vec<&'a mut SatBody<'a>>,
     pub other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
     pub central_body: &'a CentralBody,
@@ -14,7 +14,7 @@ pub struct Gravity<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> Gravity<'a> {
+impl<'a> Eoms<'a> {
     pub fn dxdt(&self, state: &Vector6<f64>, time: &f64, other_body_id: usize) -> Vector6<f64> {
         match &self.model {
             GravityModel::Spherical(model) => model.calculate(
@@ -198,11 +198,10 @@ impl GravityCalculation for SphericalGrav {
         state_dot
             .fixed_rows_mut::<3usize>(0)
             .copy_from(&state.fixed_rows::<3usize>(3));
-
-        let mut x = Vector3::zeros();
-        x.fixed_rows_mut::<3usize>(0)
-            .copy_from(&state.fixed_rows::<3usize>(0));
-
+        // let mut x = Vector3::zeros();
+        // x.fixed_rows_mut::<3usize>(0)
+        //     .copy_from(&state.fixed_rows::<3usize>(0));
+        let x = state.fixed_rows::<3usize>(0);
         let r = x.norm();
 
         // Compute gravitational effects from each body in other_body
@@ -211,9 +210,10 @@ impl GravityCalculation for SphericalGrav {
                 // Skip if the body is the same as the one being evaluated
                 continue;
             }
-            let mut y = Vector3::zeros();
-            y.fixed_rows_mut::<3usize>(0)
-                .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
+            let y = body.pos_old.fixed_rows::<3usize>(0);
+            // let mut y = Vector3::zeros();
+            // y.fixed_rows_mut::<3usize>(0)
+            //     .copy_from(&body.pos_old.fixed_rows::<3usize>(0)); // position of other body
             let delta_x = x - y; // Assuming `position` is a field in OtherBody
             let r_body = delta_x.norm();
             let muor3_body = body.mu / r_body.powi(3); // Assuming `mu` is the gravitational parameter in OtherBody
@@ -468,3 +468,10 @@ impl GravityCalculation for SphHarmonicGrav {
         state_dot
     }
 }
+
+#[allow(dead_code)]
+pub enum Perturbations {
+    Aerodynamic(AeroAccel),
+}
+
+pub struct AeroAccel {}
