@@ -4,7 +4,9 @@ use crate::eoms::*;
 // use crate::otherbody::*;
 // use crate::satbody::*;
 // use matfile::{MatFile, NumericData};
+use bincode::serialize_into;
 use nalgebra::*;
+
 // use ndarray::Array2;
 use std::error::Error;
 use std::fs::File;
@@ -161,7 +163,7 @@ impl<'a> DynamicalSystem<'a> {
 
         if self.timeflag == true {
             let end_time = Instant::now() - start_time;
-            println!("Elapsed propagation time: {:?}", end_time);
+            println!("Elapsed propagation time (.txt): {:?}", end_time);
         }
     }
 
@@ -173,13 +175,13 @@ impl<'a> DynamicalSystem<'a> {
 
         // Creating files
         for satellite in self.eoms.satellite.iter() {
-            let filename = format!("outputs/output_{}.txt", satellite.name);
+            let filename = format!("outputs/txt/output_{}.txt", satellite.name);
             let file = BufWriter::new(File::create(&filename)?);
             files.push(file);
         }
 
         for body in self.eoms.other_body.iter() {
-            let filename = format!("outputs/output_other_{}.txt", body.name);
+            let filename = format!("outputs/txt/output_other_{}.txt", body.name);
             let file = BufWriter::new(File::create(&filename)?);
             other_files.push(file);
         }
@@ -215,6 +217,59 @@ impl<'a> DynamicalSystem<'a> {
 
         let end_time = Instant::now() - start_time;
         println!("Elapsed writing time: {:?}", end_time);
+        Ok(())
+    }
+
+    pub fn writebinary(&self) -> Result<(), Box<dyn Error>> {
+        let mut files: Vec<BufWriter<File>> = Vec::new();
+        let mut other_files: Vec<BufWriter<File>> = Vec::new();
+
+        let start_time = Instant::now();
+
+        // Creating files
+        for satellite in self.eoms.satellite.iter() {
+            let filename = format!("outputs/bin/output_{}.bin", satellite.name);
+            let file = BufWriter::new(File::create(&filename)?);
+            files.push(file);
+        }
+
+        for body in self.eoms.other_body.iter() {
+            let filename = format!("outputs/bin/output_other_{}.bin", body.name);
+            let file = BufWriter::new(File::create(&filename)?);
+            other_files.push(file);
+        }
+
+        // Writing to files
+        for k in 0..self.maxsteps {
+            for (sat_num, satellite) in self.eoms.satellite.iter().enumerate() {
+                let data = [
+                    satellite.state_history[k][0],
+                    satellite.state_history[k][1],
+                    satellite.state_history[k][2],
+                ];
+                serialize_into(&mut files[sat_num], &data)?;
+            }
+
+            for (other_num, body) in self.eoms.other_body.iter().enumerate() {
+                let data = [
+                    body.state_history[k][0],
+                    body.state_history[k][1],
+                    body.state_history[k][2],
+                ];
+                serialize_into(&mut other_files[other_num], &data)?;
+            }
+        }
+
+        for writer in &mut files {
+            writer.flush()?;
+        }
+
+        for writer in &mut other_files {
+            writer.flush()?;
+        }
+
+        let end_time = Instant::now() - start_time;
+        println!("Elapsed writing time (.bin): {:?}", end_time);
         Ok(())
     }
 

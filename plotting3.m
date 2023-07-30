@@ -1,11 +1,11 @@
 clear
-addpath("outputs")
+addpath("outputs/txt")
 opts = delimitedTextImportOptions("NumVariables", 3);
 
 plotsphere = true;
 
 params.rad = 6378137;
-directory = fullfile(pwd, 'outputs');  % Modify the directory path to include "outputs"
+directory = fullfile(pwd, 'outputs/txt');  % Modify the directory path to include "outputs"
 files = dir(fullfile(directory, 'output_sat*'));  % Get a list of files matching the pattern
 num_sats = numel(files);  % Count the number of files
 

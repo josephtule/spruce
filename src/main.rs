@@ -145,7 +145,7 @@ fn main() {
     #[allow(unused_mut)]
     #[allow(unused_assignments)]
     let mut n = (tspan / dt) as usize;
-    n = 1e6 as usize;
+    n = 1e5 as usize;
     let mut sys_temp = DynamicalSystem {
         maxsteps: n as usize,
         step_width: dt,
@@ -162,6 +162,10 @@ fn main() {
     // sys_temp.propagate();
     sys_temp.propagate();
     if sys_temp.writeflag && sys_temp.storeflag {
+        match sys_temp.writebinary() {
+            Ok(_) => println!("Writing succesful"),
+            Err(e) => println!("Error during writing: {}", e),
+        }
         match sys_temp.writefiles() {
             Ok(_) => println!("Writing succesful"),
             Err(e) => println!("Error during writing: {}", e),
