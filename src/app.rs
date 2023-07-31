@@ -21,6 +21,7 @@ pub struct MyApp {
     writeflag: bool,
     timeflag: bool,
     storeflag: bool,
+    defaultdays: f64,
 }
 
 impl Default for MyApp {
@@ -34,6 +35,7 @@ impl Default for MyApp {
             writeflag: true,
             timeflag: true,
             storeflag: true,
+            defaultdays: 2.,
         }
     }
 }
@@ -42,11 +44,10 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let mut days = 2.;
                 ui.label("Default Orbit time (days):");
-                ui.add(egui::DragValue::new(&mut days).speed(0.1));
+                ui.add(egui::DragValue::new(&mut self.defaultdays).speed(0.1));
                 if ui.button("Set Default Scenario").clicked() {
-                    self.default_scenario(days);
+                    self.default_scenario(self.defaultdays);
                 }
             });
             // CentralBody UI
@@ -72,8 +73,8 @@ impl eframe::App for MyApp {
                 if ui.button("Default Earth Values").clicked() {
                     self.central_body.name = String::from("Earth");
                     self.central_body.mass = 5.97219e24; // kg
-                    self.central_body.mu = 3.986004418000000e+14; // kg.m^3/s^2
-                    self.central_body.equatorial_radius = 6378137.; // m
+                    self.central_body.mu = 3.986004418000000e+5; // kg.m^3/s^2
+                    self.central_body.equatorial_radius = 6378.137; // m
                     self.central_body.omega = 7.292115e-5;
                 }
             });
@@ -97,7 +98,7 @@ impl eframe::App for MyApp {
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in other_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e3));
+                                    ui.add(egui::DragValue::new(state).speed(1e1));
                                 }
                             });
                         });
@@ -129,7 +130,7 @@ impl eframe::App for MyApp {
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in sat_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e3));
+                                    ui.add(egui::DragValue::new(state).speed(1e1));
                                 }
                             });
                             if ui.button("Remove").clicked() {
@@ -231,6 +232,18 @@ impl eframe::App for MyApp {
                             Err(e) => println!("Error during writing: {}", e),
                         }
                     }
+                    for sat in self.sat_bodies.iter_mut() {
+                        if let Some(last_state) = sat.state_history.last() {
+                            sat.state = Vector6::from_vec(last_state.clone());
+                        }
+                        sat.state_history = vec![];
+                    }
+                    for other in self.other_bodies.iter_mut() {
+                        if let Some(last_state) = other.state_history.last() {
+                            other.state = Vector6::from_vec(last_state.clone());
+                        }
+                        other.state_history = vec![];
+                    }
                 }
             });
         });
@@ -242,11 +255,11 @@ impl MyApp {
         let mut earth = CentralBody {
             name: String::from("Earth"),
             mass: 5.97219e24,            // kg
-            mu: 3.986004418000000e+14,   // kg.m^3/s^2
-            equatorial_radius: 6378137., // m
+            mu: 3.986004418000000e+5,    // km^3/s^2
+            equatorial_radius: 6378.137, // km
             omega: 7.292115e-5,          // rad/s
-            max_order: 0, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
-            max_deg: 0,   // order >= degree
+            max_order: 4, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
+            max_deg: 4,   // order >= degree
             c: vec![vec![]],
             s: vec![vec![]],
             eci2ecef: Matrix3::zeros(),
@@ -264,11 +277,11 @@ impl MyApp {
                 .expect("Could not read file");
         }
         let time_0 = 0.;
-        let moon_distance_from_earth = 384400e3; // meters
+        let moon_distance_from_earth = 384400.; // meters
         let moonv0 = (earth.mu / moon_distance_from_earth).sqrt();
         let moon1 = OtherBody {
             mass: 7.34e22,
-            mu: 4.9048695e12,
+            mu: 4.9048695e3,
             id: 1,
             pos_old: Vector3::zeros(),
             propagate_flag: true,
@@ -280,7 +293,7 @@ impl MyApp {
 
         let moon2 = OtherBody {
             mass: 7.34e22,
-            mu: 4.9048695e12,
+            mu: 4.9048695e3,
             id: 2,
             pos_old: Vector3::zeros(),
             propagate_flag: true,
@@ -290,9 +303,9 @@ impl MyApp {
             name: String::from("moon2"),
         };
 
-        let v0 = 7.350157059479294e+03;
-        let moon_radius = 1.7371e6; // meters
-        let sat_altitude_above_moon = 100e3; // 100 km
+        let v0 = 7.350157059479294;
+        let moon_radius = 1.7371e3; // km
+        let sat_altitude_above_moon = 100.; // 100 km
         let sat_distance_from_moon_center = moon_radius + sat_altitude_above_moon;
         let v0_sat = (moon1.mu / sat_distance_from_moon_center).sqrt();
 
@@ -315,7 +328,7 @@ impl MyApp {
             name: String::from("sat2"), // match struct name
             mass: 100.,                 //kg
             state: vector![
-                earth.equatorial_radius + 1000e3,
+                earth.equatorial_radius + 1000.,
                 0.,
                 0.,
                 0.,

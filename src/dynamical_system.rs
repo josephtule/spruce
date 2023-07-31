@@ -264,10 +264,12 @@ impl<'a> DynamicalSystem<'a> {
 
         for writer in &mut files {
             writer.flush()?;
+            drop(writer);
         }
 
         for writer in &mut other_files {
             writer.flush()?;
+            drop(writer);
         }
 
         let end_time = Instant::now() - start_time;

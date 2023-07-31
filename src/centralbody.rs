@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use crate::math::*;
 use nalgebra::*;
 use std::f64::consts::PI;
 use std::fs::File;
@@ -33,8 +35,8 @@ impl CentralBody {
         maxord: usize,
     ) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
         // generate legendre polynomials based on degree and phi (geocentric latitude)
-        let mut P = vec![vec![0.; maxdeg + 3]; maxord + 3];
-        let mut scale_factor = vec![vec![0.; maxdeg + 3]; maxord + 3];
+        let mut P = vec![vec![0.; maxdeg + 2]; maxord + 2];
+        let mut scale_factor = vec![vec![0.; maxdeg + 2]; maxord + 2];
 
         let cphi = (PI / 2. - phi).cos();
         let sphi = (PI / 2. - phi).sin();
@@ -47,8 +49,8 @@ impl CentralBody {
         scale_factor[1][0] = 1.;
         scale_factor[1][1] = 0.;
 
-        for n in 2..maxord + 3 {
-            for m in 0..maxdeg + 1 {
+        for n in 2..maxord + 2 {
+            for m in 0..n {
                 // compute the rest of the normalized associated legendre polynomials
                 // using recursive relations as well as scale factors for normalization
                 let nf = n as f64;
@@ -76,14 +78,7 @@ impl CentralBody {
             }
         }
 
-        /* println!("P matrix");
-        for i in 0..P.len() {
-            println!("{:.6?}", P[i]);
-        }
-        println!("\nScaling Factor Matrix");
-        for i in 0..P.len() {
-            println!("{:.6?}", scale_factor[i]);
-        } */
+        // print_vec_of_vecs(&P);
         (P, scale_factor)
     }
 

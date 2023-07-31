@@ -73,7 +73,7 @@ pub fn colvec(vector: &Vec<f64>) -> Vec<Vec<f64>> {
 }
 
 #[allow(dead_code)]
-fn print_smatrix<T: Display, const R: usize, const C: usize>(mat: &SMatrix<T, R, C>) {
+pub fn print_smatrix<T: Display, const R: usize, const C: usize>(mat: &SMatrix<T, R, C>) {
     print!("[");
     for i in 0..R {
         for j in 0..C {
@@ -89,7 +89,7 @@ fn print_smatrix<T: Display, const R: usize, const C: usize>(mat: &SMatrix<T, R,
 }
 
 #[allow(dead_code)]
-fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
+pub fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
     let nrows = mat.nrows();
     let ncols = mat.ncols();
 
@@ -105,4 +105,14 @@ fn print_dmatrix<T: Display>(mat: &DMatrix<T>) {
         }
     }
     println!("");
+}
+
+#[allow(dead_code)]
+pub fn print_vec_of_vecs<T: std::fmt::Display>(vecs: &Vec<Vec<T>>) {
+    for vec in vecs {
+        for item in vec.iter() {
+            print!("{} ", item);
+        }
+        println!();
+    }
 }

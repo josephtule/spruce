@@ -3,7 +3,7 @@ addpath("outputs/bin")
 
 plotsphere = true;
 
-params.rad = 6378137;
+params.rad = 6378137/1000;
 directory = fullfile(pwd, 'outputs/bin');
 files = dir(fullfile(directory, 'output_sat*'));
 num_sats = numel(files);
