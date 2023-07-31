@@ -87,9 +87,12 @@ impl eframe::App for MyApp {
                         .logarithmic(true),
                 );
                 ui.add(
-                    egui::Slider::new(&mut self.central_body.max_deg, 0..=2159)
-                        .text("Max Degree")
-                        .logarithmic(true),
+                    egui::Slider::new(
+                        &mut self.central_body.max_deg,
+                        0..=self.central_body.max_order,
+                    )
+                    .text("Max Degree")
+                    .logarithmic(true),
                 );
                 if ui.button("Default Earth Values").clicked() {
                     self.central_body.name = String::from("Earth");
@@ -264,10 +267,10 @@ impl eframe::App for MyApp {
                             Ok(_) => println!("Writing succesful"),
                             Err(e) => println!("Error during writing: {}", e),
                         }
-                        match sys_temp.writefiles() {
-                            Ok(_) => println!("Writing succesful"),
-                            Err(e) => println!("Error during writing: {}", e),
-                        }
+                        // match sys_temp.writefiles() {
+                        //     Ok(_) => println!("Writing succesful"),
+                        //     Err(e) => println!("Error during writing: {}", e),
+                        // }
                     }
                     for sat in self.sat_bodies.iter_mut() {
                         if let Some(last_state) = sat.state_history.last() {
@@ -289,7 +292,7 @@ impl eframe::App for MyApp {
 
 impl MyApp {
     fn default_scenario(&mut self, days: f64) {
-        let mut earth = CentralBody {
+        let earth = CentralBody {
             name: String::from("Earth"),
             mass: 5.97219e24,            // kg
             mu: 3.986004418000000e+5,    // km^3/s^2
@@ -301,18 +304,18 @@ impl MyApp {
             s: vec![vec![]],
             eci2ecef: Matrix3::zeros(),
         };
-        if earth.max_order > 1 && earth.max_deg > 0 {
-            let filename = if earth.max_order > 361 {
-                "egm2008_2159.txt"
-            } else if earth.max_order > 121 {
-                "egm2008_360.txt"
-            } else {
-                "egm2008_120.txt"
-            };
-            earth
-                .read_sph_coefs(filename, earth.max_order, earth.max_deg)
-                .expect("Could not read file");
-        }
+        // if earth.max_order > 1 && earth.max_deg > 0 {
+        //     let filename = if earth.max_order > 361 {
+        //         "egm2008_2159.txt"
+        //     } else if earth.max_order > 121 {
+        //         "egm2008_360.txt"
+        //     } else {
+        //         "egm2008_120.txt"
+        //     };
+        //     earth
+        //         .read_sph_coefs(filename, earth.max_order, earth.max_deg)
+        //         .expect("Could not read file");
+        // }
         let time_0 = 0.;
         let moon_distance_from_earth = 384400.; // meters
         let moonv0 = (earth.mu / moon_distance_from_earth).sqrt();

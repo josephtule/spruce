@@ -1,4 +1,5 @@
 /target
 egm2008data.txt
-egm2008_2159.txt
-egm2008_360.txt
+egm2008_2159.*
+egm2008_360.*
+egm2008_120.bin
