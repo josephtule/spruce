@@ -165,6 +165,7 @@ impl<'a> DynamicalSystem<'a> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn writefiles(&self) -> Result<(), Box<dyn Error>> {
         // Ensure the directory exists
         std::fs::create_dir_all("outputs/txt")?;
