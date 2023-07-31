@@ -56,13 +56,13 @@ impl eframe::App for MyApp {
                 ui.label("Name");
                 ui.text_edit_singleline(&mut self.central_body.name);
                 ui.label("Mass");
-                ui.add(egui::DragValue::new(&mut self.central_body.mass).speed(1e12));
+                ui.add(egui::DragValue::new(&mut self.central_body.mass).speed(1e6));
                 ui.label("Mu");
-                ui.add(egui::DragValue::new(&mut self.central_body.mu).speed(1e6));
+                ui.add(egui::DragValue::new(&mut self.central_body.mu).speed(1e2));
                 ui.label("Equatorial Radius");
-                ui.add(egui::DragValue::new(&mut self.central_body.equatorial_radius).speed(1e6));
+                ui.add(egui::DragValue::new(&mut self.central_body.equatorial_radius).speed(1e2));
                 ui.label("Rotational Speed");
-                ui.add(egui::DragValue::new(&mut self.central_body.omega).speed(1e-6));
+                ui.add(egui::DragValue::new(&mut self.central_body.omega).speed(1e-7));
                 ui.label("Max Order");
                 ui.add(egui::Slider::new(
                     &mut self.central_body.max_order,
@@ -73,8 +73,8 @@ impl eframe::App for MyApp {
                 if ui.button("Default Earth Values").clicked() {
                     self.central_body.name = String::from("Earth");
                     self.central_body.mass = 5.97219e24; // kg
-                    self.central_body.mu = 3.986004418000000e+5; // kg.m^3/s^2
-                    self.central_body.equatorial_radius = 6378.137; // m
+                    self.central_body.mu = 3.986004418000000e+5; // km^3/s^2
+                    self.central_body.equatorial_radius = 6378.137; // km
                     self.central_body.omega = 7.292115e-5;
                 }
             });
@@ -89,16 +89,16 @@ impl eframe::App for MyApp {
                             ui.label("Name");
                             ui.text_edit_singleline(&mut other_body.name);
                             ui.label("Mass");
-                            ui.add(egui::DragValue::new(&mut other_body.mass).speed(1e6));
+                            ui.add(egui::DragValue::new(&mut other_body.mass).speed(1e4));
                             ui.label("Mu");
-                            ui.add(egui::DragValue::new(&mut other_body.mu).speed(1e6));
+                            ui.add(egui::DragValue::new(&mut other_body.mu).speed(1e2));
                             other_body.id = index;
                             ui.label("Body ID");
                             ui.add(egui::DragValue::new(&mut other_body.id).speed(1.0));
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in other_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e1));
+                                    ui.add(egui::DragValue::new(state).speed(1e-3));
                                 }
                             });
                         });
@@ -126,11 +126,11 @@ impl eframe::App for MyApp {
                             ui.label("Name");
                             ui.text_edit_singleline(&mut sat_body.name);
                             ui.label("Mass");
-                            ui.add(egui::DragValue::new(&mut sat_body.mass).speed(100.0));
+                            ui.add(egui::DragValue::new(&mut sat_body.mass).speed(10.));
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in sat_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e1));
+                                    ui.add(egui::DragValue::new(state).speed(1e-3));
                                 }
                             });
                             if ui.button("Remove").clicked() {
@@ -158,7 +158,7 @@ impl eframe::App for MyApp {
 
                 ui.horizontal(|ui| {
                     ui.label("Step Width:");
-                    ui.add(egui::DragValue::new(&mut self.step_width).speed(0.1));
+                    ui.add(egui::DragValue::new(&mut self.step_width).speed(0.01));
                 });
 
                 ui.checkbox(&mut self.writeflag, "Write Flag");

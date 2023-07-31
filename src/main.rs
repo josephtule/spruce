@@ -180,16 +180,7 @@ fn main() -> eframe::Result<()> {
 
     // println!("{:?}", sys_temp.satellite[0].state_history);
     //
-
-    // // run gui
-    // let native_options = eframe::NativeOptions::default();
-    // eframe::run_native(
-    //     "Space Bodies",
-    //     native_options,
-    //     Box::new(|_cc| Box::new(MyApp::default())),
-    // )
-    //
-    // // Create an instance of MyApp
+    // Create an instance of MyApp
     let my_app = MyApp::default();
 
     // Setup eframe context and integration
@@ -198,7 +189,11 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     // let native_options = eframe::NativeOptions::default();
-    eframe::run_native("Space Bodies", options, Box::new(|_cc| Box::new(my_app)))
+    eframe::run_native(
+        "Orbit Propagator (use main.rs to get finer control)",
+        options,
+        Box::new(|_cc| Box::new(my_app)),
+    )
 }
 
 // // attitude printing, not needed for now
