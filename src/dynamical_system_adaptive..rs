@@ -82,10 +82,10 @@ impl<'a> DynamicalSystem<'a> {
 
         // propagation ----------------------------------------------------------------------
         let n = 0;
-        let finish_step = false;
+        let mut finish_step = false;
         loop {
             // init/clear step_widths vector
-            let step_widths = vec![];
+            let mut step_widths = vec![];
             // integrate for each satellite
             for sat_num in 0..self.eoms.satellite.len() {
                 let current_state = self.eoms.satellite[sat_num].state.clone();
@@ -144,15 +144,9 @@ impl<'a> DynamicalSystem<'a> {
                 }
             }
             if !finish_step {    
-                let min_step_width = step_widths.iter().min();
-                match min_step_width {
-                    Some(min_step_width) => {
-                        self.step_width = min_step_width;
-                        finish_step = true;
-                        continue;
-                    }
-                    None => println!("Warn: Using previous step width");
-                }
+                self.step_width = *step_widths.iter().min().unwrap();
+                finish_step = true;
+                continue;
             } else {
                 if n > self.maxsteps { break; };
                 n += 1;
