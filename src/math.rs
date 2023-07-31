@@ -116,3 +116,55 @@ pub fn print_vec_of_vecs<T: std::fmt::Display>(vecs: &Vec<Vec<T>>) {
         println!();
     }
 }
+
+#[allow(non_snake_case, dead_code)]
+fn state2coes(state: Vector6<f64>, mu: f64) -> (f64,f64,f64,f64,f64,f64,f64) {
+    let mut r_vec = Vector3::zeros();
+    let mut v_vec = Vector3::zeros();
+    r_vec.fixed_rows_mut::<3usize>(0).copy_from(&state.fixed_rows::<3usize>(0)); // consistently faster
+    v_vec.fixed_rows_mut::<3usize>(0).copy_from(&state.fixed_rows::<3usize>(3));
+
+    let h_vec = r_vec.cross(&v_vec);
+
+    let h_mag: f64 = h_vec.norm();
+    let v_mag = v_vec.norm();
+    let r_mag = r_vec.norm();
+    let n_vec = Vector3::new(0.,0.,1.).cross(&h_vec);
+    let n_mag = n_vec.norm();
+    let e_vec = ((v_mag.powi(2) - mu / r_mag) * r_vec - r_vec.dot(&v_vec) * v_vec) / mu;
+    let e = e_vec.norm();
+
+    let energy = v_mag.powi(2) / 2. - mu / r_mag;
+    let a: f64;
+    let p: f64;
+    if e != 1.0 {
+        a = - mu / 2. / energy;
+        p = a*(1. - e.powi(2));
+    } else {
+        p = h_mag.powi(2) / mu;
+        a = f64::INFINITY;
+    }
+
+
+    let i = (h_vec[2]/h_mag).acos();
+    let mut RAAN = (n_vec[1]/n_mag).acos();
+    if n_vec[1] < 0. {
+        RAAN = 2.* PI - RAAN;
+    }
+    if RAAN.is_nan() {
+        RAAN = 0.;
+    }
+    let mut AOP = (n_vec.dot(&e_vec) / (n_mag * e)).acos();
+    if e_vec[2] < 0. {
+        AOP = 2. * PI - AOP;
+    }
+    if AOP.is_nan() {
+        AOP = 0.;
+    }
+    let mut TA = (e_vec.dot(&r_vec) /(e * r_mag)).acos();
+    if r_vec.dot(&v_vec) < 0. {
+        TA = 2. * PI - TA;
+        println!("{}",TA);
+    }
+    (a, e, p, i, RAAN, AOP, TA)
+}
