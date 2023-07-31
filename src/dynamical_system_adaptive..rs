@@ -24,27 +24,6 @@ pub struct DynamicalSystem<'a> {
 
 impl<'a> DynamicalSystem<'a> {
     #[allow(dead_code)]
-    pub fn rk4_step_bak(
-        &self,
-        dxdt: &dyn Fn(&Vector6<f64>, &f64) -> Vector6<f64>,
-        state: &Vector6<f64>,
-    ) -> Vector6<f64> {
-        let halfstep = self.step_width / 2.;
-
-        let k1 = dxdt(&state, &self.time);
-
-        let k2 = dxdt(&(state + k1 * halfstep), &(self.time + halfstep));
-
-        let k3 = dxdt(&(state + k2 * halfstep), &(self.time + halfstep));
-
-        let k4 = dxdt(
-            &(state + self.step_width * k3),
-            &(self.time + self.step_width),
-        );
-
-        state + self.step_width / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
-    }
-
     pub fn rk4_step<F>(&self, dxdt: F, state: &Vector6<f64>) -> Vector6<f64>
     where
         F: Fn(&Vector6<f64>, &f64) -> Vector6<f64>,
@@ -102,7 +81,11 @@ impl<'a> DynamicalSystem<'a> {
         }
 
         // propagation ----------------------------------------------------------------------
-        for _k in 0..self.maxsteps {
+        let n = 0;
+        let finish_step = false;
+        loop {
+            // init/clear step_widths vector
+            let step_widths = vec![];
             // integrate for each satellite
             for sat_num in 0..self.eoms.satellite.len() {
                 let current_state = self.eoms.satellite[sat_num].state.clone();
@@ -110,18 +93,19 @@ impl<'a> DynamicalSystem<'a> {
                 let dxdt_fun = |state: &Vector6<f64>, time: &f64| -> Vector6<f64> {
                     self.eoms.dxdt(state, time, 9999)
                 };
-
-                let state_new = self.rk4_step(&dxdt_fun, &current_state);
-
-                self.eoms.satellite[sat_num].state = state_new;
-                // store state and time histories
-                if self.storeflag {
-                    let state_new = self.eoms.satellite[sat_num].state;
-                    self.eoms.satellite[sat_num]
-                        .state_history
-                        .push(state_new.data.0[0].to_vec());
-                    let time_new = self.time + self.step_width;
-                    self.eoms.satellite[sat_num].time_history.push(time_new);
+                if finish_step {
+                    let (state_new,dt_new) = self.rk45_step(&dxdt_fun, &current_state);
+                    step_widths.push(dt_new)
+                    self.eoms.satellite[sat_num].state = state_new;
+                    // store state and time histories
+                    if self.storeflag {
+                        let state_new = self.eoms.satellite[sat_num].state;
+                        self.eoms.satellite[sat_num]
+                            .state_history
+                            .push(state_new.data.0[0].to_vec());
+                        let time_new = self.time + self.step_width;
+                        self.eoms.satellite[sat_num].time_history.push(time_new);
+                    }
                 }
             }
             for other_num in 0..self.eoms.other_body.len() {
@@ -143,20 +127,37 @@ impl<'a> DynamicalSystem<'a> {
                         .dxdt2(state, time, self.eoms.other_body[other_num].id)
                 };
 
-                let state_new = self.rk4_step(&dxdt_fun, &current_state);
-
-                self.eoms.other_body[other_num].state = state_new;
-
-                // store state and time histories
-                if self.storeflag {
-                    let state_new = self.eoms.other_body[other_num].state;
-                    self.eoms.other_body[other_num]
-                        .state_history
-                        .push(state_new.data.0[0].to_vec());
-                    let time_new = self.time + self.step_width;
-                    self.eoms.other_body[other_num].time_history.push(time_new);
+                let (state_new,dt) = self.rk45_step(&dxdt_fun, &current_state);
+                step_widths.push(dt);
+                if finish_step {
+                    self.eoms.other_body[other_num].state = state_new;
+    
+                    // store state and time histories
+                    if self.storeflag {
+                        let state_new = self.eoms.other_body[other_num].state;
+                        self.eoms.other_body[other_num]
+                            .state_history
+                            .push(state_new.data.0[0].to_vec());
+                        let time_new = self.time + self.step_width;
+                        self.eoms.other_body[other_num].time_history.push(time_new);
+                    }
                 }
             }
+            if !finish_step {    
+                let min_step_width = step_widths.iter().min();
+                match min_step_width {
+                    Some(min_step_width) => {
+                        self.step_width = min_step_width;
+                        finish_step = true;
+                        continue;
+                    }
+                    None => println!("Warn: Using previous step width");
+                }
+            } else {
+                finsh_step = false;
+            }
+            if n > self.maxsteps { break; };
+            n += 1;
         }
 
         if self.timeflag == true {
@@ -277,52 +278,4 @@ impl<'a> DynamicalSystem<'a> {
         println!("Elapsed writing time (.bin): {:?}", end_time);
         Ok(())
     }
-
-    // pub fn writemat(&self) -> Result<(), Box<dyn Error>> {
-    //     let start_time = Instant::now();
-    //
-    //     // Create a new MAT file for satellites
-    //     let mut sat_file = MatFile::new("outputs/satellites.mat")?;
-    //
-    //     for satellite in &self.eoms.satellite {
-    //         // Convert satellite state history to 2D ndarray (assuming state_history is Vec<Vec<f64>>)
-    //         let matrix: Array2<f64> = Array2::from_shape_vec(
-    //             (self.maxsteps, 3),
-    //             satellite
-    //                 .state_history
-    //                 .clone()
-    //                 .into_iter()
-    //                 .flatten()
-    //                 .collect(),
-    //         )?;
-    //
-    //         let data = NumericData::Double {
-    //             real: matrix.into_raw_vec(),
-    //             imag: None,
-    //         };
-    //
-    //         sat_file.write_numeric(&satellite.name, data)?;
-    //     }
-    //
-    //     // Create a new MAT file for other bodies
-    //     let mut body_file = MatFile::new("outputs/other_bodies.mat")?;
-    //
-    //     for body in &self.eoms.other_body {
-    //         let matrix: Array2<f64> = Array2::from_shape_vec(
-    //             (self.maxsteps, 3),
-    //             body.state_history.clone().into_iter().flatten().collect(),
-    //         )?;
-    //
-    //         let data = NumericData::Double {
-    //             real: matrix.into_raw_vec(),
-    //             imag: None,
-    //         };
-    //
-    //         body_file.write_numeric(&body.name, data)?;
-    //     }
-    //
-    //     let end_time = Instant::now() - start_time;
-    //     println!("Elapsed writing time: {:?}", end_time);
-    //     Ok(())
-    // }
 }
