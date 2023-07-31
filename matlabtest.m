@@ -7,20 +7,21 @@ params.rad = 6378.14e3;
 params.deg = 8;
 % x0 = [params.rad+100e3; 0;0;0;sqrt(params.mu/(params.rad+100e3));0];
 theta = .5;
+moon_distance_from_earth = 384400e3;
+moonv0 = sqrt(params.mu / moon_distance_from_earth);
 v0 = 7.350157059479294e+03 * 1.25;
 x0 = [
-    params.rad + 1000e3;
+    moon_distance_from_earth;
     0.;
     0.;
     0.;
-    v0*sin(theta);
-    v0*cos(theta);
+    moonv0;
+    0;
     ];
 
 
-% % dp stuff
 x(:,1) = x0;
-t = 0; tend = 2*pi*sqrt((params.rad + 1000e3)^3/params.mu) * 20; % 2 obits
+t = 0; tend = 3600. * 24. * 27.; % 2 days
 tspan = linspace(0,tend,params.N);
 
 % rkstuff
@@ -49,7 +50,7 @@ toc
 
 %% plot orbit(s)
 f1 = figure(1);
-plot3(xecef(:,1),xecef(:,2),xecef(:,3)) % ode
+% plot3(xecef(:,1),xecef(:,2),xecef(:,3)) % ode
 hold on
 plot3(x(:,1),x(:,2),x(:,3)) % ode
 legend("ECEF Trajectory","ECI Trajectory",'Location','best')

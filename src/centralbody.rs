@@ -2,7 +2,7 @@ use nalgebra::*;
 use std::f64::consts::PI;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
-
+#[derive(Clone)]
 #[allow(non_snake_case)]
 pub struct CentralBody {
     pub name: String,
@@ -137,5 +137,20 @@ impl CentralBody {
         }
 
         Ok(())
+    }
+
+    pub fn new() -> Self {
+        CentralBody {
+            name: String::from(""),
+            mass: 0.,              // kg
+            mu: 0.,                // kg.m^3/s^2
+            equatorial_radius: 0., // m
+            omega: 0.,             // rad/s
+            max_order: 0, // [0,0] for spherical, [2,0] for J2, [2+,1+] for spherical harmonics
+            max_deg: 0,   // order >= degree
+            c: vec![vec![]],
+            s: vec![vec![]],
+            eci2ecef: Matrix3::zeros(),
+        }
     }
 }

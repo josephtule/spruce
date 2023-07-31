@@ -7,8 +7,8 @@ use std::ops::AddAssign;
 use std::ops::SubAssign;
 
 pub struct Eoms<'a> {
-    pub satellite: &'a mut Vec<&'a mut SatBody<'a>>,
-    pub other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+    pub satellite: &'a mut Vec<&'a mut SatBody>,
+    pub other_body: &'a mut Vec<&'a mut OtherBody>,
     pub central_body: &'a CentralBody,
     pub model: GravityModel,
 }
@@ -59,8 +59,8 @@ impl<'a> Eoms<'a> {
     // constructor functions
     pub fn spherical(
         central_body: &'a CentralBody,
-        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
-        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+        satellite: &'a mut Vec<&'a mut SatBody>,
+        other_body: &'a mut Vec<&'a mut OtherBody>,
     ) -> Self {
         Self {
             central_body,
@@ -71,8 +71,8 @@ impl<'a> Eoms<'a> {
     }
     pub fn j(
         central_body: &'a CentralBody,
-        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
-        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+        satellite: &'a mut Vec<&'a mut SatBody>,
+        other_body: &'a mut Vec<&'a mut OtherBody>,
     ) -> Self {
         Self {
             central_body,
@@ -84,8 +84,8 @@ impl<'a> Eoms<'a> {
 
     pub fn sphharmonic(
         central_body: &'a CentralBody,
-        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
-        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+        satellite: &'a mut Vec<&'a mut SatBody>,
+        other_body: &'a mut Vec<&'a mut OtherBody>,
     ) -> Self {
         Self {
             central_body,
@@ -97,8 +97,8 @@ impl<'a> Eoms<'a> {
 
     pub fn othergrav(
         central_body: &'a CentralBody,
-        satellite: &'a mut Vec<&'a mut SatBody<'a>>,
-        other_body: &'a mut Vec<&'a mut OtherBody<'a>>,
+        satellite: &'a mut Vec<&'a mut SatBody>,
+        other_body: &'a mut Vec<&'a mut OtherBody>,
     ) -> Self {
         Self {
             central_body,
@@ -122,7 +122,7 @@ pub trait GravityCalculation {
     fn calculate<'a>(
         &self,
         central_body: &CentralBody,
-        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body: &Vec<&mut OtherBody>,
         other_body_id: usize,
         state: &Vector6<f64>,
         time: &f64,
@@ -135,7 +135,7 @@ impl GravityCalculation for OtherGrav {
     fn calculate<'a>(
         &self,
         central_body: &CentralBody,
-        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body: &Vec<&mut OtherBody>,
         other_body_id: usize, // set to 0 if satellite
         state: &Vector6<f64>,
         _time: &f64,
@@ -187,7 +187,7 @@ impl GravityCalculation for SphericalGrav {
     fn calculate<'a>(
         &self,
         central_body: &CentralBody,
-        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body: &Vec<&mut OtherBody>,
         other_body_id: usize,
         state: &Vector6<f64>,
         _time: &f64,
@@ -239,7 +239,7 @@ impl GravityCalculation for JGrav {
     fn calculate<'a>(
         &self,
         central_body: &CentralBody,
-        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body: &Vec<&mut OtherBody>,
         other_body_id: usize,
         state: &Vector6<f64>,
         _time: &f64,
@@ -328,7 +328,7 @@ impl GravityCalculation for SphHarmonicGrav {
     fn calculate<'a>(
         &self,
         central_body: &CentralBody,
-        other_body: &Vec<&mut OtherBody<'a>>,
+        other_body: &Vec<&mut OtherBody>,
         other_body_id: usize,
         state: &Vector6<f64>,
         time: &f64,

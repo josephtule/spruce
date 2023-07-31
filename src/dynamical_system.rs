@@ -1,5 +1,4 @@
 // use crate::math::*;
-use crate::centralbody::*;
 use crate::eoms::*;
 // use crate::otherbody::*;
 // use crate::satbody::*;
@@ -14,7 +13,6 @@ use std::io::{BufWriter, Write};
 use std::time::Instant;
 // use nalgebra::*;
 pub struct DynamicalSystem<'a> {
-    pub central_body: &'a CentralBody,
     pub eoms: &'a mut Eoms<'a>,
     pub time: f64,
     pub step_width: f64,
