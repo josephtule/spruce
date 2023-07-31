@@ -56,20 +56,41 @@ impl eframe::App for MyApp {
                 ui.label("Name");
                 ui.text_edit_singleline(&mut self.central_body.name);
                 ui.label("Mass");
-                ui.add(egui::DragValue::new(&mut self.central_body.mass).speed(1e6));
+                ui.add(
+                    egui::DragValue::new(&mut self.central_body.mass)
+                        .speed(1e5)
+                        .suffix(" kg"),
+                );
                 ui.label("Mu");
-                ui.add(egui::DragValue::new(&mut self.central_body.mu).speed(1e2));
+                ui.add(
+                    egui::DragValue::new(&mut self.central_body.mu)
+                        .speed(1e2)
+                        .suffix(" km^3/s^2"),
+                );
                 ui.label("Equatorial Radius");
-                ui.add(egui::DragValue::new(&mut self.central_body.equatorial_radius).speed(1e2));
+                ui.add(
+                    egui::DragValue::new(&mut self.central_body.equatorial_radius)
+                        .speed(1e2)
+                        .suffix(" km"),
+                );
                 ui.label("Rotational Speed");
-                ui.add(egui::DragValue::new(&mut self.central_body.omega).speed(1e-7));
-                ui.label("Max Order");
-                ui.add(egui::Slider::new(
-                    &mut self.central_body.max_order,
-                    0..=2159,
-                ));
-                ui.label("Max Degree");
-                ui.add(egui::Slider::new(&mut self.central_body.max_deg, 0..=2159));
+                ui.add(
+                    egui::DragValue::new(&mut self.central_body.omega)
+                        .speed(1e-7)
+                        .suffix(" rad/s"),
+                );
+                ui.label("Spherical Harmonics");
+                ui.add_sized(
+                    [300., 20.],
+                    egui::Slider::new(&mut self.central_body.max_order, 0..=2159)
+                        .text("Max Order")
+                        .logarithmic(true),
+                );
+                ui.add(
+                    egui::Slider::new(&mut self.central_body.max_deg, 0..=2159)
+                        .text("Max Degree")
+                        .logarithmic(true),
+                );
                 if ui.button("Default Earth Values").clicked() {
                     self.central_body.name = String::from("Earth");
                     self.central_body.mass = 5.97219e24; // kg
@@ -89,16 +110,24 @@ impl eframe::App for MyApp {
                             ui.label("Name");
                             ui.text_edit_singleline(&mut other_body.name);
                             ui.label("Mass");
-                            ui.add(egui::DragValue::new(&mut other_body.mass).speed(1e4));
+                            ui.add(
+                                egui::DragValue::new(&mut other_body.mass)
+                                    .speed(1e4)
+                                    .suffix(" kg"),
+                            );
                             ui.label("Mu");
-                            ui.add(egui::DragValue::new(&mut other_body.mu).speed(1e2));
+                            ui.add(
+                                egui::DragValue::new(&mut other_body.mu)
+                                    .speed(1e2)
+                                    .suffix(" km^3/s^2"),
+                            );
                             other_body.id = index;
                             ui.label("Body ID");
                             ui.add(egui::DragValue::new(&mut other_body.id).speed(1.0));
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in other_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e-3));
+                                    ui.add(egui::DragValue::new(state).speed(1e-3).suffix(" km"));
                                 }
                             });
                         });
@@ -126,11 +155,15 @@ impl eframe::App for MyApp {
                             ui.label("Name");
                             ui.text_edit_singleline(&mut sat_body.name);
                             ui.label("Mass");
-                            ui.add(egui::DragValue::new(&mut sat_body.mass).speed(10.));
+                            ui.add(
+                                egui::DragValue::new(&mut sat_body.mass)
+                                    .speed(0.1)
+                                    .suffix(" kg"),
+                            );
                             ui.horizontal(|ui| {
                                 ui.label("Initial State:");
                                 for state in sat_body.state.iter_mut() {
-                                    ui.add(egui::DragValue::new(state).speed(1e-3));
+                                    ui.add(egui::DragValue::new(state).speed(1e-3).suffix(" km"));
                                 }
                             });
                             if ui.button("Remove").clicked() {
@@ -158,7 +191,11 @@ impl eframe::App for MyApp {
 
                 ui.horizontal(|ui| {
                     ui.label("Step Width:");
-                    ui.add(egui::DragValue::new(&mut self.step_width).speed(0.01));
+                    ui.add(
+                        egui::DragValue::new(&mut self.step_width)
+                            .speed(0.01)
+                            .suffix(" sec"),
+                    );
                 });
 
                 ui.checkbox(&mut self.writeflag, "Write Flag");
