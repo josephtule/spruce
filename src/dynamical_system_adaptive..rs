@@ -154,10 +154,12 @@ impl<'a> DynamicalSystem<'a> {
                     None => println!("Warn: Using previous step width");
                 }
             } else {
+                if n > self.maxsteps { break; };
+                n += 1;
+                self.time += self.step_width;
                 finsh_step = false;
             }
-            if n > self.maxsteps { break; };
-            n += 1;
+
         }
 
         if self.timeflag == true {
