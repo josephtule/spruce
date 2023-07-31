@@ -42,7 +42,7 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let mut days = 0.;
+                let mut days = 2.;
                 ui.label("Default Orbit time (days):");
                 ui.add(egui::DragValue::new(&mut days).speed(0.1));
                 if ui.button("Set Default Scenario").clicked() {

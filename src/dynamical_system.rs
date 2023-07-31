@@ -166,6 +166,8 @@ impl<'a> DynamicalSystem<'a> {
     }
 
     pub fn writefiles(&self) -> Result<(), Box<dyn Error>> {
+        // Ensure the directory exists
+        std::fs::create_dir_all("outputs/txt")?;
         let mut files: Vec<BufWriter<File>> = Vec::new();
         let mut other_files: Vec<BufWriter<File>> = Vec::new();
 
@@ -219,6 +221,8 @@ impl<'a> DynamicalSystem<'a> {
     }
 
     pub fn writebinary(&self) -> Result<(), Box<dyn Error>> {
+        // Ensure the directory exists
+        std::fs::create_dir_all("outputs/bin")?;
         let mut files: Vec<BufWriter<File>> = Vec::new();
         let mut other_files: Vec<BufWriter<File>> = Vec::new();
 
