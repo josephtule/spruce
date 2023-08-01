@@ -1,5 +1,5 @@
 use nalgebra::*;
-
+#[derive(Clone)]
 pub struct OtherBody {
     pub name: String,
     pub id: usize,

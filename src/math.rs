@@ -1,4 +1,5 @@
 use nalgebra::*;
+use std::f64::consts::*;
 use std::fmt::Display;
 use std::ops::Mul;
 // pub fn magnitude(vector: &Vec<f64>) -> f64 {
@@ -118,18 +119,22 @@ pub fn print_vec_of_vecs<T: std::fmt::Display>(vecs: &Vec<Vec<T>>) {
 }
 
 #[allow(non_snake_case, dead_code)]
-fn state2coes(state: Vector6<f64>, mu: f64) -> (f64,f64,f64,f64,f64,f64,f64) {
+pub fn state2coes(state: Vector6<f64>, mu: f64) -> [f64; 7] {
     let mut r_vec = Vector3::zeros();
     let mut v_vec = Vector3::zeros();
-    r_vec.fixed_rows_mut::<3usize>(0).copy_from(&state.fixed_rows::<3usize>(0)); // consistently faster
-    v_vec.fixed_rows_mut::<3usize>(0).copy_from(&state.fixed_rows::<3usize>(3));
+    r_vec
+        .fixed_rows_mut::<3usize>(0)
+        .copy_from(&state.fixed_rows::<3usize>(0)); // consistently faster
+    v_vec
+        .fixed_rows_mut::<3usize>(0)
+        .copy_from(&state.fixed_rows::<3usize>(3));
 
     let h_vec = r_vec.cross(&v_vec);
 
     let h_mag: f64 = h_vec.norm();
     let v_mag = v_vec.norm();
     let r_mag = r_vec.norm();
-    let n_vec = Vector3::new(0.,0.,1.).cross(&h_vec);
+    let n_vec = Vector3::new(0., 0., 1.).cross(&h_vec);
     let n_mag = n_vec.norm();
     let e_vec = ((v_mag.powi(2) - mu / r_mag) * r_vec - r_vec.dot(&v_vec) * v_vec) / mu;
     let e = e_vec.norm();
@@ -138,18 +143,17 @@ fn state2coes(state: Vector6<f64>, mu: f64) -> (f64,f64,f64,f64,f64,f64,f64) {
     let a: f64;
     let p: f64;
     if e != 1.0 {
-        a = - mu / 2. / energy;
-        p = a*(1. - e.powi(2));
+        a = -mu / 2. / energy;
+        p = a * (1. - e.powi(2));
     } else {
         p = h_mag.powi(2) / mu;
         a = f64::INFINITY;
     }
 
-
-    let i = (h_vec[2]/h_mag).acos();
-    let mut RAAN = (n_vec[1]/n_mag).acos();
+    let i = (h_vec[2] / h_mag).acos();
+    let mut RAAN = (n_vec[0] / n_mag).acos();
     if n_vec[1] < 0. {
-        RAAN = 2.* PI - RAAN;
+        RAAN = 2. * PI - RAAN;
     }
     if RAAN.is_nan() {
         RAAN = 0.;
@@ -161,10 +165,86 @@ fn state2coes(state: Vector6<f64>, mu: f64) -> (f64,f64,f64,f64,f64,f64,f64) {
     if AOP.is_nan() {
         AOP = 0.;
     }
-    let mut TA = (e_vec.dot(&r_vec) /(e * r_mag)).acos();
+    let mut TA = (e_vec.dot(&r_vec) / (e * r_mag)).acos();
     if r_vec.dot(&v_vec) < 0. {
         TA = 2. * PI - TA;
-        println!("{}",TA);
+        println!("{}", TA);
     }
-    (a, e, p, i, RAAN, AOP, TA)
+
+    // special cases
+    if e.abs() < 1e-8 && i.abs() < 1e-8 {
+        // circular equatorial
+        RAAN = 0.;
+        AOP = 0.;
+        TA = (r_vec[0] / r_mag).acos();
+        if r_vec[1] > 0. {
+            TA = 2. * PI - TA;
+        }
+    }
+    if e.abs() < 1e-8 && i.abs() > 1e-8 {
+        // circular inclined
+        AOP = 0.;
+        TA = (n_vec.dot(&r_vec) / (n_mag * r_mag)).acos();
+        if r_vec[2] < 0. {
+            TA = 2. * PI - TA;
+        }
+    }
+    if e.abs() > 1e-8 && i.abs() < 1e-8 {
+        // elliptical equatorial
+        RAAN = 0.;
+        AOP = (e_vec[0] / e).acos();
+        if e_vec[1] < 0. {
+            AOP = 2. * PI - AOP;
+        }
+    }
+
+    [p, e, i, RAAN, AOP, TA, a]
+}
+
+#[allow(non_snake_case, dead_code)]
+pub fn coes2state(
+    p: f64,
+    e: f64,
+    i: f64,
+    RAAN: &mut f64,
+    AOP: &mut f64,
+    TA: f64,
+    mu: f64,
+) -> Vector6<f64> {
+    if e.abs() < 1e-8 && i.abs() < 1e-8 {
+        // circular equatorial
+        *AOP = 0.;
+        *RAAN = 0.;
+    } else if e.abs() < 1e-8 && i.abs() > 1e-8 {
+        // circular inclined
+        *AOP = 0.;
+    } else if e.abs() > 1e-8 && i.abs() < 1e-8 {
+        // elliptical equatorial
+        *RAAN = 0.;
+    }
+
+    let mut r = vector![
+        p * TA.cos() / (1. + e * TA.cos()),
+        p * TA.sin() / (1. + e * TA.cos()),
+        0.
+    ];
+
+    let mut v = vector![
+        -(mu / p).sqrt() * TA.sin(),
+        (mu / p).sqrt() * (e + TA.cos()),
+        0.
+    ];
+
+    let pqw2eci = matrix![
+        RAAN.cos() * AOP.cos() - RAAN.sin() * AOP.sin() * i.cos(), -RAAN.cos() * AOP.sin() - RAAN.sin() * AOP.cos() * i.cos(), RAAN.sin() * i.sin();
+        RAAN.sin() * AOP.cos() + RAAN.cos() * AOP.sin() * i.cos(), -RAAN.sin() * AOP.sin() + RAAN.cos() * AOP.cos() * i.cos(), -RAAN.cos() * i.sin();
+        AOP.sin()*i.sin(), AOP.cos()*i.sin(), i.cos();];
+
+    r = pqw2eci * r;
+    v = pqw2eci * v;
+
+    let mut state = Vector6::zeros();
+    state.fixed_rows_mut::<3>(0).copy_from(&r);
+    state.fixed_rows_mut::<3>(3).copy_from(&v);
+    state
 }
