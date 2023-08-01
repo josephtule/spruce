@@ -20,6 +20,7 @@ pub struct DynamicalSystem<'a> {
     pub writeflag: bool,
     pub timeflag: bool,
     pub storeflag: bool,
+    pub time_history: Vec<f64>,
 }
 
 impl<'a> DynamicalSystem<'a> {
@@ -153,8 +154,7 @@ impl<'a> DynamicalSystem<'a> {
                     self.eoms.other_body[other_num]
                         .state_history
                         .push(state_new.data.0[0].to_vec());
-                    let time_new = self.time + self.step_width;
-                    self.eoms.other_body[other_num].time_history.push(time_new);
+                    self.time_history.push(self.time + self.step_width);
                 }
             }
             self.time += self.step_width;

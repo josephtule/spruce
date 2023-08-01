@@ -6,6 +6,7 @@ mod centralbody;
 mod dynamical_system;
 mod eoms;
 mod math;
+mod orbitalelements;
 mod otherbody;
 mod satbody;
 // use math as ma; // use math with ma:: notation

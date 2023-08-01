@@ -4,6 +4,7 @@ use crate::centralbody::*;
 use crate::dynamical_system::*;
 #[allow(unused_imports)]
 use crate::eoms::*;
+use crate::orbitalelements::OrbitalElements;
 #[allow(unused_imports)]
 use crate::otherbody::*;
 #[allow(unused_imports)]
@@ -259,6 +260,7 @@ impl eframe::App for MyApp {
                         writeflag: self.writeflag,
                         timeflag: self.timeflag,
                         storeflag: self.storeflag,
+                        time_history: vec![],
                     };
 
                     sys_temp.propagate();
@@ -327,8 +329,16 @@ impl MyApp {
             propagate_flag: true,
             state: vector![moon_distance_from_earth, 0., 0., 0., moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
             state_history: vec![],
-            time_history: vec![],
             name: String::from("moon1"),
+            coes: OrbitalElements {
+                sma: 0.,
+                ecc: 0.,
+                inc: 0.,
+                raan: 0.,
+                aop: 0.,
+                ta: 0.,
+                param: 0.,
+            },
         };
 
         let moon2 = OtherBody {
@@ -339,8 +349,16 @@ impl MyApp {
             propagate_flag: true,
             state: vector![-moon_distance_from_earth, 0., 0., 0., -moonv0, 0.,], // Assuming moon starts on the x-axis and other velocities will be set elsewhere
             state_history: vec![],
-            time_history: vec![],
             name: String::from("moon2"),
+            coes: OrbitalElements {
+                sma: 0.,
+                ecc: 0.,
+                inc: 0.,
+                raan: 0.,
+                aop: 0.,
+                ta: 0.,
+                param: 0.,
+            },
         };
 
         let v0 = 7.350157059479294;
@@ -363,6 +381,15 @@ impl MyApp {
             propagate_flag: true,
             state_history: vec![],
             time_history: vec![time_0],
+            coes: OrbitalElements {
+                sma: 0.,
+                ecc: 0.,
+                inc: 0.,
+                raan: 0.,
+                aop: 0.,
+                ta: 0.,
+                param: 0.,
+            },
         };
         let sat2 = SatBody {
             name: String::from("sat2"), // match struct name
@@ -378,6 +405,15 @@ impl MyApp {
             propagate_flag: true,
             state_history: vec![],
             time_history: vec![time_0],
+            coes: OrbitalElements {
+                sma: 0.,
+                ecc: 0.,
+                inc: 0.,
+                raan: 0.,
+                aop: 0.,
+                ta: 0.,
+                param: 0.,
+            },
         };
 
         let sat3 = SatBody {
@@ -394,6 +430,15 @@ impl MyApp {
             propagate_flag: true,
             state_history: vec![],
             time_history: vec![time_0],
+            coes: OrbitalElements {
+                sma: 0.,
+                ecc: 0.,
+                inc: 0.,
+                raan: 0.,
+                aop: 0.,
+                ta: 0.,
+                param: 0.,
+            },
         };
 
         self.central_body = earth;
