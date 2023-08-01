@@ -439,6 +439,8 @@ impl GravityCalculation for SphHarmonicGrav {
             grav_sph[2],
         );
 
+        let x = Vector3::new(x[0] * ct - x[1] * st, x[1] * ct + x[0] * st, x[2]);
+
         // grav_sph = eci2ecef.transpose() * grav_sph; // transformation from ecef to eci
         // https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/gravity-SphericalHarmonics.pdf
         // page 5 to 7,

@@ -157,6 +157,7 @@ impl<'a> DynamicalSystem<'a> {
                     self.eoms.other_body[other_num].time_history.push(time_new);
                 }
             }
+            self.time += self.step_width;
         }
 
         if self.timeflag == true {
