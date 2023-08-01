@@ -23,6 +23,9 @@ pub struct MyApp {
     timeflag: bool,
     storeflag: bool,
     defaultdays: f64,
+    coes_window: bool,
+    reference_body_id_input: String,
+    selected_target_body: Option<String>,
 }
 
 impl Default for MyApp {
@@ -37,6 +40,9 @@ impl Default for MyApp {
             timeflag: true,
             storeflag: true,
             defaultdays: 2.,
+            coes_window: false,
+            reference_body_id_input: "9999".to_string(), // default to central body
+            selected_target_body: None,
         }
     }
 }
@@ -181,10 +187,57 @@ impl eframe::App for MyApp {
                 }
                 to_remove_other.reverse();
                 for index in to_remove_other {
-                    self.other_bodies.remove(index);
+                    self.sat_bodies.remove(index);
                 }
             });
+            // COES window
+            if ui.button("Input COEs").clicked() {
+                self.coes_window = true;
+            }
+            if self.coes_window {
+                egui::Window::new("Input Classical Orbital Elements").show(ctx, |ui| {
+                    // Fields for the COEs
+                    let mut coes: Vector6<f64> = Vector6::zeros(); // Or wherever you want to store them
+                    ui.label("Classical Orbital Elements:");
+                    for element in coes.iter_mut() {
+                        ui.add(egui::DragValue::new(element).speed(0.01));
+                    }
 
+                    let mut reference_body_id: usize = 9999; // default to central body
+                    ui.horizontal(|ui| {
+                        ui.label("Reference Body ID (9999 for Central Body):");
+                        ui.add(egui::DragValue::new(&mut reference_body_id).speed(1.0));
+                    });
+
+                    if ui.button("Calculate State from COEs").clicked() {
+                        let ref_state = if reference_body_id != 9999 {
+                            self.other_bodies[reference_body_id].state.clone()
+                        } else {
+                            Vector6::zeros() // Assuming central body state is (0,0,0,0,0,0)
+                        };
+                        // Here, you should convert the COEs to state and add ref_state.
+                        coes = Vector6::zeros(); // conversion function
+                    }
+
+                    let mut target_body_id: usize = 0;
+                    ui.horizontal(|ui| {
+                        ui.label("Target Body ID:");
+                        ui.add(egui::DragValue::new(&mut target_body_id).speed(1.0));
+                    });
+
+                    if ui.button("Copy State to Target Body").clicked() {
+                        if target_body_id < self.other_bodies.len() {
+                            self.other_bodies[target_body_id].state = coes.clone();
+                        }
+                        // If you want to handle SatBodies separately, add another condition here
+                        self.coes_window = false; // Close the window
+                    }
+
+                    if ui.button("Close").clicked() {
+                        self.coes_window = false; // Just to close without doing anything
+                    }
+                });
+            }
             ui.group(|ui| {
                 ui.label("Dynamical System Configuration");
 
