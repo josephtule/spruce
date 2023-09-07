@@ -50,7 +50,7 @@ impl CentralBody {
         scale_factor[1][1] = 0.;
 
         for n in 2..maxord + 2 {
-            for m in 0..n {
+            for m in 0..=n {
                 // compute the rest of the normalized associated legendre polynomials
                 // using recursive relations as well as scale factors for normalization
                 let nf = n as f64;
