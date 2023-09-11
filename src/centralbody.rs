@@ -38,9 +38,15 @@ impl CentralBody {
         let mut P = vec![vec![0.; maxdeg + 2]; maxord + 2];
         let mut scale_factor = vec![vec![0.; maxdeg + 2]; maxord + 2];
 
-        let cphi = (PI / 2. - phi).cos();
-        let sphi = (PI / 2. - phi).sin();
-
+        let mut cphi = (PI / 2. - phi).cos();
+        let mut sphi = (PI / 2. - phi).sin();
+        
+        let eps = 2.220446049250313e-16;
+        
+        cphi = if cphi.abs() <= eps { 0.0 } else { cphi };
+        sphi = if sphi.abs() <= eps { 0.0 } else { sphi }; 
+    
+    
         // seeds for normalized recursive formula
         P[0][0] = 1.; // n = 0, m = 0;
         P[1][0] = 3.0_f64.sqrt() * cphi;
